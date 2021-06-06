@@ -1,6 +1,10 @@
 An implementation of
 [Distilling a Neural Network Into a Soft Decision Tree](https://arxiv.org/abs/1711.09784)
 
+**Caveats**:
+It does not implement *complications* like *temperature*, *probabilities penalty*, or *windowing*
+since the results are already better than those reported in the paper.
+
 
 Simple demo:
 
