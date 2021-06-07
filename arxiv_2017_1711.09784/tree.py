@@ -5,10 +5,13 @@ class TreeModel(tf.keras.Model):
 
   def __init__(self, depth, n_classes=10):
     super().__init__()
-    self.tree = build_tree(depth, n_classes)
+    self.model = tf.keras.Sequential([
+        tf.keras.layers.Flatten(),
+        build_tree(depth, n_classes),
+    ])
 
   def call(self, inputs):
-    return self.tree(inputs)
+    return self.model(inputs)
 
 
 class LeafNode(tf.keras.layers.Layer):
@@ -25,16 +28,10 @@ class InnerNode(tf.keras.layers.Layer):
 
   def __init__(self):
     super().__init__()
-    self.model = tf.keras.Sequential([
-        tf.keras.layers.Flatten(),
-        tf.keras.layers.Dense(1, activation="sigmoid")
-    ])
-
-  def build(self, input_shape):
-    self.model.build(input_shape)
+    self.dense = tf.keras.layers.Dense(1, activation="sigmoid")
 
   def call(self, inputs):
-    pR = self.model(inputs)
+    pR = self.dense(inputs)
     return pR * self.right(inputs) + (1 - pR) * self.left(inputs)
 
 
