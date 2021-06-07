@@ -16,7 +16,7 @@ here we considere it to be 2.
 Simple demo:
 
 ```
-./demo.py
+./demo.py --depth=11
 ```
 
 It should produce something along this output:
