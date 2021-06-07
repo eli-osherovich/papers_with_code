@@ -3,8 +3,11 @@ An implementation of
 
 **Caveats**:
 It does not implement *complications* like *temperature*, *probabilities penalty*, or *windowing*
-since the results are already better than those reported in the paper.
+since the results are **already better than those reported in the paper**.
 
+Another notable difference is how one measures trees' depth. This implementation's *n* corresponds
+to *n-1* in the papers. Namely, a tree with a root and two leaves has depth 1 in the paper, whereas
+here we considere it to be 2.
 
 Simple demo:
 

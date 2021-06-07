@@ -12,6 +12,11 @@ def parse_args():
   parser = argparse.ArgumentParser()
 
   parser.add_argument(
+      "--depth",
+      type=int,
+      default=9,
+      help="Tree depth (including root and leaves)")
+  parser.add_argument(
       "--epochs", type=int, default=1000, help="Number of epochs")
   parser.add_argument("--batch-size", type=int, default=1024, help="Batch size")
   parser.add_argument(
@@ -37,7 +42,7 @@ def main():
   val_ds = val_ds.map(lambda x, y: (x / 255, y)).cache().batch(
       args.batch_size).prefetch(tf.data.AUTOTUNE)
 
-  model = tree.TreeModel(depth=9)
+  model = tree.TreeModel(args.depth)
 
   early_stop = tf.keras.callbacks.EarlyStopping(
       monitor="val_acc",
