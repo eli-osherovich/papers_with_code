@@ -12,7 +12,7 @@ class TreeModel(tf.keras.Model):
         build_tree(depth, n_classes),
     ])
 
-  def call(self, inputs):
+  def call(self, inputs: tf.Tensor):
     return self.model(inputs)
 
 
