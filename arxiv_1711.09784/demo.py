@@ -34,13 +34,20 @@ def main():
   args = parse_args()
 
   train_ds, val_ds = tfds.load(
-      "mnist", split=["train", "test"], as_supervised=True)
+      "mnist", split=["train", "test"], shuffle_files=False, as_supervised=True)
 
-  train_ds = train_ds.map(lambda x, y: (x / 255, y)).cache().shuffle(
-      args.shuffle_buffer).batch(args.batch_size).prefetch(tf.data.AUTOTUNE)
+  train_ds = train_ds\
+      .map(lambda x, y: (x / 255, y), num_parallel_calls=tf.data.AUTOTUNE)\
+      .cache()\
+      .shuffle(args.shuffle_buffer)\
+      .batch(args.batch_size)\
+      .prefetch(tf.data.AUTOTUNE)
 
-  val_ds = val_ds.map(lambda x, y: (x / 255, y)).cache().batch(
-      args.batch_size).prefetch(tf.data.AUTOTUNE)
+  val_ds = val_ds\
+      .map(lambda x, y: (x / 255, y), num_parallel_calls=tf.data.AUTOTUNE)\
+      .batch(args.batch_size)\
+      .cache()\
+      .prefetch(tf.data.AUTOTUNE)
 
   model = tree.TreeModel(args.depth)
 
