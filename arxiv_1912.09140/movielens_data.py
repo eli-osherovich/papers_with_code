@@ -79,6 +79,7 @@ class MovieLens:
             engine=engine,
             encoding="latin1")
 
+        # Keep only clean data.
         df.dropna(inplace=True)
         return df
 
@@ -92,11 +93,18 @@ class MovieLens:
   def movies(self, column_names=("item", "title", "genres")) -> pd.DataFrame:
     df = self.read_csv(self.movies_files, column_names)
 
+    # Add year column (extracted from the title)
+    df["Release Date"] = df.title.map(
+        lambda x: pd.to_numeric(x.strip()[-5:-1], errors="coerce"))
+
     # Convert genres to dummy variables.
     genres = df.pop("genres")
     genres = pd.get_dummies(
         genres.map(lambda x: x.split("|")).explode()).sum(level=0)
     df = pd.concat([df, genres], axis=1)
+
+    # Keep only clean data.
+    df.dropna(inplace=True)
     return df
 
   @functools.cached_property
@@ -118,7 +126,10 @@ class MovieLens:
     })
 
     # Join ratings with user/item aggregates.
-    df = self.ratings.merge(item_means, on="item").merge(user_means, on="user")
+    df = self.ratings\
+      .merge(item_means, on="item")\
+      .merge(user_means, on="user")\
+      .merge(self.movies, on="item")
 
     # Avoid data leakage: remove current rating from aggregated user/movie data
     # In the following we use the formula:
@@ -131,17 +142,20 @@ class MovieLens:
 
     df["item_ratings_mean"] += ((df["item_ratings_mean"] - df["rating"]) /
                                 df["item_ratings_count"])
+
+    # Keep only clean data.
+    df.dropna(inplace=True)
     return df
 
 
-def download_dataset(dataset="latest-small", cache_dir="datasets"):
+def download_dataset(ds_name="latest-small", cache_dir="datasets"):
   os.makedirs(cache_dir, exist_ok=True)
-  if dataset not in DATASETS:
+  if ds_name not in DATASETS:
     raise AssertionError(
-        f"Unknown Movielens dataset '{dataset}'. Choose one of {list(DATASETS.keys())}"
+        f"Unknown Movielens dataset '{ds_name}'. Choose one of {list(DATASETS.keys())}"
     )
 
-  record = DATASETS[dataset]
+  record = DATASETS[ds_name]
   checksum = record.get("checksum")
   data_file = os.path.basename(record["file"])
   data_path = keras.utils.get_file(
@@ -149,5 +163,5 @@ def download_dataset(dataset="latest-small", cache_dir="datasets"):
       record["file"],
       file_hash=checksum,
       cache_dir=cache_dir,
-      cache_subdir=dataset)
+      cache_subdir=ds_name)
   return data_path
