@@ -1,0 +1,3 @@
+[tool.yapf]
+based_on_style = "yapf"
+split_before_dot = true
