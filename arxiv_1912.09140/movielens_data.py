@@ -43,7 +43,7 @@ class MovieLens:
         zfile, os.R_OK), f"File {zfile} either does not exist or not readable."
     assert zipfile.is_zipfile(zfile), f"File {zfile} is not a valid ZIP file."
     self.zfile = zfile
-    self.movies_files = ["movies.csv", "movies.dat"]
+    self.items_files = ["movies.csv", "movies.dat"]
     self.ratings_files = ["ratings.csv", "ratings.dat"]
 
   @staticmethod
@@ -90,12 +90,15 @@ class MovieLens:
         column_names=("user", "item", "rating", "timestamp"))
 
   @functools.cached_property
-  def movies(self, column_names=("item", "title", "genres")) -> pd.DataFrame:
-    df = self.read_csv(self.movies_files, column_names)
+  def items(self, column_names=("item", "title", "genres")) -> pd.DataFrame:
+    df = self.read_csv(self.items_files, column_names)
 
     # Add year column (extracted from the title)
-    df["Release Date"] = df.title.map(
+    df["Release Date"] = df["title"].map(
         lambda x: pd.to_numeric(x.strip()[-5:-1], errors="coerce"))
+
+    # Drop title since we do not use it.
+    df.drop(["title"], axis=1)
 
     # Convert genres to dummy variables.
     genres = df.pop("genres")
@@ -127,9 +130,9 @@ class MovieLens:
 
     # Join ratings with user/item aggregates.
     df = self.ratings\
-      .merge(item_means, on="item")\
-      .merge(user_means, on="user")\
-      .merge(self.movies, on="item")
+      .merge(user_means, how="left", on="user")\
+      .merge(item_means, how="left", on="item")\
+      .merge(self.items, how="left", on="item")
 
     # Avoid data leakage: remove current rating from aggregated user/movie data
     # In the following we use the formula:
