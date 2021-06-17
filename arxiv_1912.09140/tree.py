@@ -14,18 +14,13 @@ class TreeModel(tf.keras.Model):
 
     self.tree = build_tree(depth, self.f, self.g)
 
-  def call(self, inputs, training=None):
-    if training:
-      x, y = inputs
-      h = self.h((x, y))
-      r = tf.math.reduce_mean(h, axis=1)
-    else:
-      x = inputs
-      h = None
-      r = None
+  def call(self, inputs):
+    x, y = inputs
+    h = self.h((x, y))
+    r = tf.math.reduce_mean(h, axis=1)
 
     I = tf.ones(x.shape[:-1], dtype=tf.bool)
-    return self.tree((x, r, h), training=training, mask=I)
+    return self.tree((x, r, h), mask=I)
 
 
 class LeafNode(tf.keras.layers.Layer):
@@ -34,20 +29,10 @@ class LeafNode(tf.keras.layers.Layer):
     super().__init__(*args, **kwargs)
     self.model = model
 
-  def build(self, input_shape):
-    x_shape, _r_shape, _h_shape = input_shape
-    self.val = self.add_weight(
-        name="leaf_value", shape=(x_shape[0], 1), trainable=False)
-
-  def call(self, inputs, training=None, mask=None):
-    if training:
-      _x, r, h = inputs
-      rI = calc_rI(h, mask)
-      val = self.model((r, rI))
-      self.val.assign(val)
-      return val
-    else:
-      return self.val
+  def call(self, inputs, mask=None):
+    _x, r, h = inputs
+    rI = calc_rI(h, mask)
+    return self.model((r, rI))
 
 
 class InnerNode(tf.keras.layers.Layer):
@@ -57,39 +42,22 @@ class InnerNode(tf.keras.layers.Layer):
     self.model = model
     self.l2 = l2
 
-  def build(self, input_shapes):
-    x_shape, _r_shape, _h_shape = input_shapes
-    self.w = self.add_weight(
-        name="w", shape=(x_shape[0], x_shape[2]), trainable=False)
-    self.b = self.add_weight(name="b", shape=(x_shape[0], 1), trainable=False)
-    self.beta = self.add_weight(
-        name="beta", shape=(x_shape[0], 1), trainable=False)
-
-  def call(self, inputs, training=None, mask=tf.constant(True)):
+  def call(self, inputs, mask=tf.constant(True)):
     x, r, h = inputs
+    rI = calc_rI(h, mask)
+    w, b, beta = self.model((r, rI))
 
-    if training:
-      rI = calc_rI(h, mask)
-      w, b, beta = self.model((r, rI))
-      self.w.assign(w)
-      self.b.assign(b)
-      self.beta.assign(beta)
-
-      pR = tf.nn.sigmoid(beta * (tf.einsum("bd, bnd -> bn", w, x) + b))
-      self.add_loss(
-          self.l2 *
-          tf.math.reduce_mean(tf.keras.losses.MSE(tf.constant(0.5), pR)))
-    else:
-      pR = tf.nn.sigmoid(self.beta *
-                         (tf.einsum("bd, bnd -> bn", self.w, x) + self.b))
-
+    pR = tf.nn.sigmoid(beta * (tf.einsum("bd, bnd -> bn", w, x) + b))
+    self.add_loss(
+        self.l2 *
+        tf.math.reduce_mean(tf.keras.losses.MSE(tf.constant(0.5), pR)))
     maskR = tf.math.logical_and(mask, pR >= 0.5)
     maskL = tf.math.logical_and(mask, pR < 0.5)
 
     # tf.print(tf.math.reduce_sum(tf.cast(maskR, tf.int64)))
     # tf.print(tf.math.reduce_sum(tf.cast(maskL, tf.int64)))
-    return (pR * self.right(inputs, training, maskR) +
-            (1 - pR) * self.left(inputs, training, maskL))
+    return (pR * self.right(inputs, maskR) +
+            (1 - pR) * self.left(inputs, maskL))
 
 
 def calc_rI(h: tf.Tensor, mask: tf.Tensor) -> tf.Tensor:
