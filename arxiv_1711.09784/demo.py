@@ -24,7 +24,11 @@ def parse_args():
   parser.add_argument(
       "--patience", type=int, default=10, help="Early stopping patience")
   parser.add_argument(
-      "--keep-best", default=False, dest="keep_best", action="store_true")
+      "--keep-last",
+      default=False,
+      dest="keep_last",
+      action="store_true",
+      help="Keep last model (by default) the best model is kept")
 
   args = parser.parse_args()
   return args
@@ -54,7 +58,7 @@ def main():
   early_stop = tf.keras.callbacks.EarlyStopping(
       monitor="val_acc",
       patience=args.patience,
-      restore_best_weights=args.keep_best)
+      restore_best_weights=not args.keep_last)
 
   model.compile(
       loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
