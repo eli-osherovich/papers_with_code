@@ -8,9 +8,9 @@ class TreeModel(tf.keras.Model):
   def __init__(self, depth, input_dim, emb_dim, *args, **kwargs):
     super().__init__(*args, **kwargs)
 
-    self.h = gen_input_encoder(input_dim, emb_dim)
-    self.g = gen_value_encoder(emb_dim)
     self.f = gen_split_model(input_dim, emb_dim)
+    self.g = gen_value_encoder(emb_dim)
+    self.h = gen_input_encoder(input_dim, emb_dim)
 
     self.tree = build_tree(depth, self.f, self.g)
 
