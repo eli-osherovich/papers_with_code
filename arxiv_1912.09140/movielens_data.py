@@ -1,10 +1,11 @@
 import functools
 import os
 import zipfile
+import logging
 
 import numpy as np
 import pandas as pd
-from tensorflow import keras
+import tensorflow as tf
 
 DATASETS = {
     "100k": {
@@ -195,10 +196,63 @@ def download_dataset(ds_name="latest-small", cache_dir="datasets"):
   record = DATASETS[ds_name]
   checksum = record.get("checksum")
   data_file = os.path.basename(record["file"])
-  data_path = keras.utils.get_file(
+  data_path = tf.keras.utils.get_file(
       data_file,
       record["file"],
       file_hash=checksum,
       cache_dir=cache_dir,
       cache_subdir=ds_name)
   return data_path
+
+
+def prepare_dataset(filepath, ratings_per_user, users_per_batch):
+  ml = MovieLens(filepath)
+  df = ml.full_table
+  df.drop(["item"], axis=1, inplace=True)
+
+  target = "rating"
+  numerical = [
+      'user_ratings_mean',
+      'user_ratings_count',
+      'item_ratings_mean',
+      'item_ratings_count',
+      'release year',
+  ]
+  onehot = set(df.columns) - set(numerical + [target])
+
+  # Scale target to [0, 1]
+  tmin = df[target].min()
+  tmax = df[target].max()
+  df[target] = (df[target] - tmin) / (tmax - tmin)
+
+  # Scale numerical
+  for n in numerical:
+    df[n] = (df[n] - df[n].mean()) / df[n].std()
+
+  # Scale onehot.
+  for o in onehot:
+    df[o] -= 0.5
+
+  datasets = []
+  for u, v in df.groupby("user"):
+    rating = v.pop("rating")
+    datasets.append(
+        tf.data.Dataset.from_tensor_slices(((v.values, rating.values), rating.values))\
+        .shuffle(128)\
+        .repeat()\
+        .batch(ratings_per_user,drop_remainder=True)
+    )
+  nusers = len(datasets)
+
+  if users_per_batch > nusers:
+    logging.warning(
+        "Users per batch %d is larger than total number of users in the dataset %d",
+        users_per_batch, nusers)
+    logging.warning("Setting users per batch to %d", nusers)
+    users_per_batch = nusers
+
+  cds = tf.data.Dataset.range(nusers).shuffle(nusers).repeat()
+  ds = tf.data.experimental.choose_from_datasets(datasets, cds).batch(
+      users_per_batch, drop_remainder=True).prefetch(tf.data.AUTOTUNE)
+
+  return ds, nusers, users_per_batch, tmin, tmax
