@@ -31,12 +31,12 @@ def parse_args():
       "-r", "--ru", type=int, default=4, help="Ratings per user in each batch")
 
   parser.add_argument(
-      "-u", "--ub", type=int, default=1024, help="Users per batch")
+      "-u", "--ub", type=int, default=128, help="Users per batch")
 
   parser.add_argument("--emb", default=512, help="Embedding dimension")
 
   parser.add_argument(
-      "--patience", type=int, default=200, help="Early stopping patience")
+      "--patience", type=int, default=500, help="Early stopping patience")
 
   parser.add_argument(
       "--keep-last",
