@@ -37,10 +37,10 @@ class LeafNode(tf.keras.layers.Layer):
 
 class InnerNode(tf.keras.layers.Layer):
 
-  def __init__(self, model, l2=0.001, *args, **kwargs):
+  def __init__(self, model, reg_weight=0.001, *args, **kwargs):
     super().__init__(*args, **kwargs)
     self.model = model
-    self.l2 = l2
+    self.reg_weight = reg_weight
 
   def call(self, inputs, mask=tf.constant(True)):
     x, r, h = inputs
@@ -48,9 +48,8 @@ class InnerNode(tf.keras.layers.Layer):
     w, b, beta = self.model((r, rI))
 
     pR = tf.nn.sigmoid(beta * (tf.einsum("bd, bnd -> bn", w, x) + b))
-    self.add_loss(
-        self.l2 *
-        tf.math.reduce_mean(tf.keras.losses.MSE(tf.constant(0.5), pR)))
+    self.add_loss(self.reg_weight * tf.math.reduce_mean(
+        tf.losses.binary_crossentropy(tf.constant(0.5, shape=pR.shape), pR)))
     maskR = tf.math.logical_and(mask, pR >= 0.5)
     maskL = tf.math.logical_and(mask, pR < 0.5)
 
