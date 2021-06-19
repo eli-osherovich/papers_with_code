@@ -60,9 +60,16 @@ class InnerNode(tf.keras.layers.Layer):
             (1 - pR) * self.left(inputs, maskL))
 
 
+@tf.function
 def calc_rI(h: tf.Tensor, mask: tf.Tensor) -> tf.Tensor:
-  rI = tf.math.reduce_mean(tf.ragged.boolean_mask(h, mask), axis=1)
-  rI = tf.where(tf.math.is_nan(rI), tf.zeros_like(rI), rI)
+  # The code is equivalent to the two lines below, but does not use ragged (slow) tensors.
+  # rI = tf.math.reduce_mean(tf.ragged.boolean_mask(h, mask), axis=1)
+  # rI = tf.where(tf.math.is_nan(rI), tf.zeros_like(rI), rI)
+
+  weights = tf.cast(mask, tf.keras.backend.floatx())
+  sum_ = tf.math.reduce_sum(weights, axis=-1, keepdims=True)
+  weights = weights * tf.math.reciprocal_no_nan(sum_)
+  rI = tf.einsum("pr, pre -> pe", weights, h)
   return rI
 
 
