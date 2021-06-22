@@ -201,11 +201,11 @@ def download_dataset(ds_name="latest-small", cache_dir="datasets"):
       record["file"],
       file_hash=checksum,
       cache_dir=cache_dir,
-      cache_subdir=ds_name)
+      cache_subdir=".")
   return data_path
 
 
-def prepare_dataset(filepath, ratings_per_user, users_per_batch):
+def prepare_datasets(filepath):
   ml = MovieLens(filepath)
   df = ml.full_table
   df.drop(["item"], axis=1, inplace=True)
@@ -233,26 +233,55 @@ def prepare_dataset(filepath, ratings_per_user, users_per_batch):
   for o in onehot:
     df[o] -= 0.5
 
+  # Split per-user
   datasets = []
   for u, v in df.groupby("user"):
     rating = v.pop("rating")
-    datasets.append(
-        tf.data.Dataset.from_tensor_slices(((v.values, rating.values), rating.values))\
-        .shuffle(128)\
-        .repeat()\
-        .batch(ratings_per_user,drop_remainder=True)
-    )
-  nusers = len(datasets)
+    datasets.append((v.values, rating.values))
+  datasets = np.asarray(datasets, dtype=object)
+  return datasets, tmin, tmax
 
-  if users_per_batch > nusers:
+
+def take_n_random(n, xy, rng=np.random.default_rng()):
+  idx = rng.integers(0, len(xy[0]), n)
+  return xy[0][idx], xy[1][idx]
+
+
+def prepare_dataset(filepath,
+                    ratings_per_user,
+                    users_per_batch,
+                    rng=np.random.default_rng()):
+  datasets, tmin, tmax = prepare_datasets(filepath)
+  n_users = len(datasets)
+  n_features = datasets[0][0].shape[1]
+
+  if users_per_batch > n_users:
     logging.warning(
         "Users per batch %d is larger than total number of users in the dataset %d",
-        users_per_batch, nusers)
-    logging.warning("Setting users per batch to %d", nusers)
-    users_per_batch = nusers
+        users_per_batch, n_users)
+    logging.warning("Setting users per batch to %d", n_users)
+    users_per_batch = n_users
 
-  cds = tf.data.Dataset.range(nusers).shuffle(nusers).repeat()
-  ds = tf.data.experimental.choose_from_datasets(datasets, cds).batch(
-      users_per_batch, drop_remainder=True).prefetch(tf.data.AUTOTUNE)
+  def generator():
+    while True:
+      users_idx = rng.choice(n_users, users_per_batch, replace=False)
+      users_batch = datasets[users_idx]
+      data_batch = [take_n_random(ratings_per_user, ds) for ds in users_batch]
+      x = tf.stack([d[0] for d in data_batch])
+      y = tf.stack([d[1] for d in data_batch])
 
-  return ds, nusers, users_per_batch, tmin, tmax
+      yield (x, y), y
+
+  dataset = tf.data.Dataset.from_generator(
+      generator,
+      output_signature=(
+          (tf.TensorSpec(
+              shape=(users_per_batch, ratings_per_user, n_features),
+              dtype=tf.float64),
+           tf.TensorSpec(
+               shape=(users_per_batch, ratings_per_user), dtype=tf.float32)),
+          tf.TensorSpec(
+              shape=(users_per_batch, ratings_per_user), dtype=tf.float32),
+      ))
+
+  return dataset, n_users, users_per_batch, tmin, tmax
