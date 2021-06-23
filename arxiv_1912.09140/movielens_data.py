@@ -212,11 +212,11 @@ def prepare_datasets(filepath):
 
   target = "rating"
   numerical = [
-      'user_ratings_mean',
-      'user_ratings_count',
-      'item_ratings_mean',
-      'item_ratings_count',
-      'release year',
+      "user_ratings_mean",
+      "user_ratings_count",
+      "item_ratings_mean",
+      "item_ratings_count",
+      "release year",
   ]
   onehot = set(df.columns) - set(numerical + [target])
 
@@ -235,7 +235,7 @@ def prepare_datasets(filepath):
 
   # Split per-user
   datasets = []
-  for u, v in df.groupby("user"):
+  for _, v in df.groupby("user"):
     rating = v.pop("rating")
     datasets.append((v.values, rating.values))
   datasets = np.asarray(datasets, dtype=object)
