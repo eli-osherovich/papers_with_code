@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 
+if __name__ == "__main__" and __package__ is None:
+  __package__ = "arxiv-1912-09140"
+
 import argparse
 
 import tensorflow as tf
 
-import movielens_data
-import tree
+from . import movielens_data, tree
 
 
 def parse_args():
@@ -60,13 +62,13 @@ def main():
 
   model = tree.TreeModel(args.depth, ds.element_spec[0][0].shape[-1], args.emb)
   early_stop = tf.keras.callbacks.EarlyStopping(
-      monitor='root_mean_squared_error',
+      monitor="root_mean_squared_error",
       patience=args.patience,
       restore_best_weights=not args.keep_last)
   model.compile(
       optimizer=tf.keras.optimizers.Adam(),
-      loss='mse',
-      metrics=['mae', tf.keras.metrics.RootMeanSquaredError()])
+      loss="mse",
+      metrics=["mae", tf.keras.metrics.RootMeanSquaredError()])
   model.fit(
       ds,
       epochs=args.epochs,
