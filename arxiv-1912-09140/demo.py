@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 if __name__ == "__main__" and __package__ is None:
-  __package__ = "arxiv-1912-09140"
+  __package__ = "arxiv-1912-09140"  # noqa: A001
 
 import argparse
 
