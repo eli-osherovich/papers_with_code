@@ -9,14 +9,14 @@ def parse_args():
   parser = argparse.ArgumentParser()
 
   parser.add_argument(
-      "--dataset",
-      type=str,
-      default="latest-small",
-      choices=["1m", "10m", "20m", "25m", "latest-small", "latest"],
-      help="Name of the Movielens dataset, e.g. 100k-ratings, 1m-ratings")
+    "--dataset",
+    type=str,
+    default="latest-small",
+    choices=["1m", "10m", "20m", "25m", "latest-small", "latest"],
+    help="Name of the Movielens dataset, e.g. 100k-ratings, 1m-ratings")
 
   parser.add_argument(
-      "--cache-dir", type=str, default="datasets", help="Cache directory")
+    "--cache-dir", type=str, default="datasets", help="Cache directory")
 
   args = parser.parse_args()
   return args

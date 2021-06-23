@@ -14,7 +14,7 @@ class MovieLens:
 
   def __init__(self, zfile: str) -> None:
     assert os.access(
-        zfile, os.R_OK), f"File {zfile} either does not exist or not readable."
+      zfile, os.R_OK), f"File {zfile} either does not exist or not readable."
     assert zipfile.is_zipfile(zfile), f"File {zfile} is not a valid ZIP file."
     self.zfile = zfile
     self.items_files = ["movies.csv", "movies.dat"]
@@ -46,12 +46,12 @@ class MovieLens:
       with zfile.open(file_info) as fd:
         sep, header, engine = self.sniff_csv_config(fd)
         df = pd.read_csv(
-            fd,
-            sep=sep,
-            header=header,
-            engine=engine,
-            encoding="latin1",
-            **kwargs)
+          fd,
+          sep=sep,
+          header=header,
+          engine=engine,
+          encoding="latin1",
+          **kwargs)
 
         # Keep only clean data.
         df.dropna(inplace=True)
@@ -63,15 +63,15 @@ class MovieLens:
     # Column types are explicitly set to lower memory consumption.
     # Furthermore, we use `user` as index to save an extra column.
     df = self.read_csv(
-        self.ratings_files,
-        names=("user", "item", "rating", "timestamp"),
-        usecols=("user", "item", "rating"),
-        index_col="user",
-        dtype={
-            "user": np.uint32,  # BUG: pandas ignores index type
-            "item": np.uint32,
-            "rating": np.float32
-        })
+      self.ratings_files,
+      names=("user", "item", "rating", "timestamp"),
+      usecols=("user", "item", "rating"),
+      index_col="user",
+      dtype={
+        "user": np.uint32,  # BUG: pandas ignores index type
+        "item": np.uint32,
+        "rating": np.float32
+      })
 
     # Keep only clean data.
     df.dropna(inplace=True)
@@ -83,22 +83,22 @@ class MovieLens:
     # However, we do not use `title`, we only extract release date from it.
     # Hence, we do not read it into the table.
     df = self.read_csv(
-        self.items_files,
-        names=("item", "release year", "genres"),
-        dtype={
-            "item": np.uint32,
-            "genres": str,
-        },
-        index_col="item",
-        converters={
-            "release year":
-                lambda x: pd.to_numeric(x.rstrip()[-5:-1], errors="coerce")
-        })
+      self.items_files,
+      names=("item", "release year", "genres"),
+      dtype={
+        "item": np.uint32,
+        "genres": str,
+      },
+      index_col="item",
+      converters={
+        "release year":
+          lambda x: pd.to_numeric(x.rstrip()[-5:-1], errors="coerce")
+      })
 
     # Convert genres to dummy variables.
     genres = df.pop("genres")
     genres = pd.get_dummies(
-        genres.map(lambda x: x.split("|")).explode()).sum(level=0)
+      genres.map(lambda x: x.split("|")).explode()).sum(level=0)
     df = pd.concat([df, genres], axis=1)
 
     # Keep only clean data.
@@ -107,29 +107,29 @@ class MovieLens:
 
   def expand_items_data(self):
     items_data = self.ratings.groupby("item").rating.agg([
-        "mean",
-        "count",
+      "mean",
+      "count",
     ]).rename(columns={
-        "mean": "item_ratings_mean",
-        "count": "item_ratings_count",
+      "mean": "item_ratings_mean",
+      "count": "item_ratings_count",
     }).astype(np.float32)
 
     items_data = items_data.merge(
-        self.items, how="inner", left_index=True, right_index=True, copy=False)
+      self.items, how="inner", left_index=True, right_index=True, copy=False)
     del self.items
     return items_data
 
   def expand_users_data(self):
     users_data = self.ratings.groupby("user").rating.agg([
-        "mean",
-        "count",
+      "mean",
+      "count",
     ]).rename(columns={
-        "mean": "user_ratings_mean",
-        "count": "user_ratings_count",
+      "mean": "user_ratings_mean",
+      "count": "user_ratings_count",
     }).astype(np.float32)
 
     users_data = self.ratings.merge(
-        users_data, how="inner", left_index=True, right_index=True, copy=False)
+      users_data, how="inner", left_index=True, right_index=True, copy=False)
     del self.ratings
     return users_data
 
@@ -139,7 +139,7 @@ class MovieLens:
     items_data = self.expand_items_data()
     users_data = self.expand_users_data()
     df = users_data.merge(
-        items_data, how="inner", left_on="item", right_index=True, copy=False)
+      items_data, how="inner", left_on="item", right_index=True, copy=False)
 
     # Avoid data leakage: remove current rating from aggregated user/movie data
     # In the following we use the formula:
@@ -162,18 +162,18 @@ def download_dataset(ds_name="latest-small", cache_dir="datasets"):
   os.makedirs(cache_dir, exist_ok=True)
   if ds_name not in movielens_config.ML_DATASETS:
     raise AssertionError(
-        f"Unknown Movielens dataset '{ds_name}'. Choose one of {list(movielens_config.ML_DATASETS)}"
+      f"Unknown Movielens dataset '{ds_name}'. Choose one of {list(movielens_config.ML_DATASETS)}"
     )
 
   record = movielens_config.ML_DATASETS[ds_name]
   checksum = record.get("checksum")
   data_file = os.path.basename(record["file"])
   data_path = tf.keras.utils.get_file(
-      data_file,
-      record["file"],
-      file_hash=checksum,
-      cache_dir=cache_dir,
-      cache_subdir=".")
+    data_file,
+    record["file"],
+    file_hash=checksum,
+    cache_dir=cache_dir,
+    cache_subdir=".")
   return data_path
 
 
@@ -184,11 +184,11 @@ def prepare_datasets(filepath):
 
   target = "rating"
   numerical = [
-      "user_ratings_mean",
-      "user_ratings_count",
-      "item_ratings_mean",
-      "item_ratings_count",
-      "release year",
+    "user_ratings_mean",
+    "user_ratings_count",
+    "item_ratings_mean",
+    "item_ratings_count",
+    "release year",
   ]
   onehot = set(df.columns) - set(numerical + [target])
 
@@ -229,8 +229,8 @@ def prepare_dataset(filepath,
 
   if users_per_batch > n_users:
     logging.warning(
-        "Users per batch %d is larger than total number of users in the dataset %d",
-        users_per_batch, n_users)
+      "Users per batch %d is larger than total number of users in the dataset %d",
+      users_per_batch, n_users)
     logging.warning("Setting users per batch to %d", n_users)
     users_per_batch = n_users
 
@@ -245,15 +245,15 @@ def prepare_dataset(filepath,
       yield (x, y), y
 
   dataset = tf.data.Dataset.from_generator(
-      generator,
-      output_signature=(
-          (tf.TensorSpec(
-              shape=(users_per_batch, ratings_per_user, n_features),
-              dtype=tf.float64),
-           tf.TensorSpec(
-               shape=(users_per_batch, ratings_per_user), dtype=tf.float32)),
-          tf.TensorSpec(
-              shape=(users_per_batch, ratings_per_user), dtype=tf.float32),
-      ))
+    generator,
+    output_signature=(
+      (tf.TensorSpec(
+        shape=(users_per_batch, ratings_per_user, n_features),
+        dtype=tf.float64),
+       tf.TensorSpec(
+         shape=(users_per_batch, ratings_per_user), dtype=tf.float32)),
+      tf.TensorSpec(
+        shape=(users_per_batch, ratings_per_user), dtype=tf.float32),
+    ))
 
   return dataset, n_users, users_per_batch, tmin, tmax

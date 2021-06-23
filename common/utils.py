@@ -5,17 +5,17 @@ import numpy as np
 
 def roundrobin_generator(arr, batch=1, rng=np.random.default_rng()):
   assert isinstance(
-      batch,
-      (int, np.integer)), f"Batch must be an integral type, got {type(batch)}"
+    batch,
+    (int, np.integer)), f"Batch must be an integral type, got {type(batch)}"
   assert batch > 0, f"Batch must be strictly positive, got {batch}"
 
   arr_len = len(arr)
 
   if batch > arr_len:
     logging.warning(
-        "Batch size %d is larger than the number of elements in the sequence: %d",
-        batch,
-        arr_len,
+      "Batch size %d is larger than the number of elements in the sequence: %d",
+      batch,
+      arr_len,
     )
 
   multiplicity = np.ceil(batch / arr_len)
