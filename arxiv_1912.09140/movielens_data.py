@@ -1,41 +1,13 @@
 import functools
+import logging
 import os
 import zipfile
-import logging
 
 import numpy as np
 import pandas as pd
 import tensorflow as tf
 
-DATASETS = {
-    "100k": {
-        "file": "http://files.grouplens.org/datasets/movielens/ml-100k.zip",
-        "checksum": "0e33842e24a9c977be4e0107933c0723",
-    },
-    "1m": {
-        "file": "http://files.grouplens.org/datasets/movielens/ml-1m.zip",
-        "checksum": "c4d9eecfca2ab87c1945afe126590906",
-    },
-    "10m": {
-        "file": "http://files.grouplens.org/datasets/movielens/ml-10m.zip",
-        "checksum": "ce571fd55effeba0271552578f2648bd",
-    },
-    "20m": {
-        "file": "http://files.grouplens.org/datasets/movielens/ml-20m.zip",
-        "checksum": "cd245b17a1ae2cc31bb14903e1204af3",
-    },
-    "25m": {
-        "file": "http://files.grouplens.org/datasets/movielens/ml-25m.zip",
-        "checksum": "6b51fb2759a8657d3bfcbfc42b592ada",
-    },
-    "latest-small": {
-        "file":
-            "http://files.grouplens.org/datasets/movielens/ml-latest-small.zip",
-    },
-    "latest": {
-        "file": "http://files.grouplens.org/datasets/movielens/ml-latest.zip",
-    }
-}
+import movielens_config
 
 
 class MovieLens:
@@ -188,12 +160,12 @@ class MovieLens:
 
 def download_dataset(ds_name="latest-small", cache_dir="datasets"):
   os.makedirs(cache_dir, exist_ok=True)
-  if ds_name not in DATASETS:
+  if ds_name not in movielens_config.ML_DATASETS:
     raise AssertionError(
-        f"Unknown Movielens dataset '{ds_name}'. Choose one of {list(DATASETS.keys())}"
+        f"Unknown Movielens dataset '{ds_name}'. Choose one of {list(movielens_config.ML_DATASETS)}"
     )
 
-  record = DATASETS[ds_name]
+  record = movielens_config.ML_DATASETS[ds_name]
   checksum = record.get("checksum")
   data_file = os.path.basename(record["file"])
   data_path = tf.keras.utils.get_file(
