@@ -35,7 +35,7 @@ def parse_args():
     help="Tree depth (including root and leaves)")
 
   parser.add_argument(
-    "-e", "--epochs", type=int, default=2000, help="Maximal number of epochs")
+    "-e", "--epochs", type=int, default=10000, help="Maximal number of epochs")
 
   parser.add_argument(
     "-r", "--ru", type=int, default=4, help="Ratings per user in each batch")
