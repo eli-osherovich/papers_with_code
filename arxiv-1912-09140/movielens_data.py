@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 
-import movielens_config
+from . import movielens_config
 
 
 class MovieLens:
