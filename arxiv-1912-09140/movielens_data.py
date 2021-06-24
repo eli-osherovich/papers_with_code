@@ -193,9 +193,9 @@ def prepare_datasets(filepath):
   onehot = set(df.columns) - set(numerical + [target])
 
   # Scale target to [0, 1]
-  tmin = df[target].min()
-  tmax = df[target].max()
-  df[target] = (df[target] - tmin) / (tmax - tmin)
+  target_min = df[target].min()
+  target_max = df[target].max()
+  df[target] = (df[target] - target_min) / (target_max - target_min)
 
   # Scale numerical
   for n in numerical:
@@ -211,7 +211,7 @@ def prepare_datasets(filepath):
     rating = v.pop("rating")
     datasets.append((v.values, rating.values))
   datasets = np.asarray(datasets, dtype=object)
-  return datasets, tmin, tmax
+  return datasets, target_min, target_max
 
 
 def take_n_random(n, xy, rng=np.random.default_rng()):
@@ -223,7 +223,7 @@ def prepare_dataset(filepath,
                     ratings_per_user,
                     users_per_batch,
                     rng=np.random.default_rng()):
-  datasets, tmin, tmax = prepare_datasets(filepath)
+  datasets, target_min, target_max = prepare_datasets(filepath)
   n_users = len(datasets)
   n_features = datasets[0][0].shape[1]
 
@@ -256,4 +256,4 @@ def prepare_dataset(filepath,
         shape=(users_per_batch, ratings_per_user), dtype=tf.float32),
     ))
 
-  return dataset, n_users, users_per_batch, tmin, tmax
+  return dataset, n_users, users_per_batch, target_min, target_max
