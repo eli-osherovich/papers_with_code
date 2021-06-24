@@ -1,5 +1,3 @@
-from typing import Union
-
 import tensorflow as tf
 
 
@@ -87,8 +85,8 @@ def gen_value_encoder(emb_dim):
   r = tf.keras.Input(shape=(emb_dim,))
   rI = tf.keras.Input(shape=(emb_dim,))
   x = tf.keras.layers.concatenate([r, rI])
-  x = tf.keras.layers.Dense(20, activation='relu')(x)
-  x = tf.keras.layers.Dense(1, activation='sigmoid')(x)
+  x = tf.keras.layers.Dense(20, activation="relu")(x)
+  x = tf.keras.layers.Dense(1, activation="sigmoid")(x)
   return tf.keras.Model(inputs=[r, rI], outputs=x)
 
 
