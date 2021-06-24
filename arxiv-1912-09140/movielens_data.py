@@ -8,6 +8,7 @@ import pandas as pd
 import tensorflow as tf
 
 from . import movielens_config
+from ..common import utils
 
 
 class MovieLens:
@@ -235,12 +236,10 @@ def prepare_dataset(filepath,
     users_per_batch = n_users
 
   def generator():
-    while True:
-      users_idx = rng.choice(n_users, users_per_batch, replace=False)
-      users_batch = datasets[users_idx]
-      data_batch = [take_n_random(ratings_per_user, ds) for ds in users_batch]
-      x = tf.stack([d[0] for d in data_batch])
-      y = tf.stack([d[1] for d in data_batch])
+    for batch in utils.roundrobin_generator(datasets, users_per_batch):
+      xy = [take_n_random(ratings_per_user, ds) for ds in batch]
+      x = tf.stack([d[0] for d in xy])
+      y = tf.stack([d[1] for d in xy])
 
       yield (x, y), y
 
