@@ -6,8 +6,12 @@ import numpy as np
 def roundrobin_generator(arr, batch_size=1, rng=np.random.default_rng()):
   assert isinstance(batch_size, (int, np.integer)), \
     f"Batch must be an integral type, got {type(batch_size)}"
-    
+
   assert batch_size > 0, f"Batch must be strictly positive, got {batch_size}"
+
+  # Make trivial cases indexable in the way we use it.
+  if isinstance(arr, (list, tuple)):
+    arr = np.asarray(arr)
 
   arr_len = len(arr)
 
@@ -29,7 +33,7 @@ def roundrobin_generator(arr, batch_size=1, rng=np.random.default_rng()):
     start = 0
     end = batch_size
     used_idx_batches = []
-    while end < all_indices_len:
+    while end <= all_indices_len:
       batch_idx = cur_perm[start:end]
       used_idx_batches.append(batch_idx)
       yield arr[cur_perm[start:end]]
