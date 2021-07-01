@@ -28,7 +28,7 @@ def test_batch_size(batch_size):
 
 
 @pytest.mark.parametrize("array_len", [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])
-def test_unique_in_bathc(array_len):
+def test_unique_in_batch(array_len):
   arr = np.arange(array_len)
   for batch_size in np.arange(1, array_len + 1):
     rrg = utils.roundrobin_generator(arr, batch_size)
