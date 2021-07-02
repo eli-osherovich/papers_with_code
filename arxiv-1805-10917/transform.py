@@ -8,8 +8,8 @@ from ..common import utils
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_integer("tx", 10, "x-axis translation (in pixels).")
-flags.DEFINE_integer("ty", 10, "y-axis translation (in pixels).")
+flags.DEFINE_integer("tx", 8, "x-axis translation (in pixels).")
+flags.DEFINE_integer("ty", 8, "y-axis translation (in pixels).")
 flags.DEFINE_enum("fill_mode", "reflect",
                   ["reflect", "wrap", "constant", "nearest"], "Fill mode.")
 flags.DEFINE_enum("interpolation", "bilinear", ["nearest", "bilinear"],
