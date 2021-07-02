@@ -19,9 +19,9 @@ flags.DEFINE_multi_integer(
 )
 
 flags.DEFINE_integer(
-  "shuffle_buffer", default=1000, help="Shuffle buffer size.", lower_bound=1)
-flags.DEFINE_integer(
-  "batch_size", default=256, help="Batch size.", lower_bound=1)
+  "shuffle_buffer", 1000, "Shuffle buffer size.", lower_bound=1)
+flags.DEFINE_integer("batch_size", 256, "Batch size.", lower_bound=1)
+flags.DEFINE_string("cache", "", "Cache file for datasets.")
 
 
 def preprocessing(x, y):
@@ -63,26 +63,33 @@ def get_datasets():
     data = [(t(x), tf.repeat(i, len(x))) for i, t in enumerate(transforms)]
     xx = tf.concat([d[0] for d in data], axis=0)
     yy = tf.concat([d[1] for d in data], axis=0)
-    return tf.data.Dataset.from_tensor_slices((xx, yy))
+    ds = tf.data.Dataset.from_tensor_slices((xx, yy))
+    if FLAGS.cache.lower() != "none":
+      ds = ds.cache(FLAGS.cache)
+    return ds
 
   return (
-    len(transforms),
+    len(transforms), \
 
     train_normal
-      .flat_map(apply_transforms)
-      .shuffle(FLAGS.shuffle_buffer)
-      .batch(FLAGS.batch_size),
+    .flat_map(apply_transforms)
+    .shuffle(FLAGS.shuffle_buffer)
+    .batch(FLAGS.batch_size)
+    .prefetch(tf.data.AUTOTUNE),
 
     train_anomalous
-      .flat_map(apply_transforms)
-      .shuffle(FLAGS.shuffle_buffer)
-      .batch(FLAGS.batch_size),
+    .flat_map(apply_transforms)
+    .shuffle(FLAGS.shuffle_buffer)
+    .batch(FLAGS.batch_size)
+    .prefetch(tf.data.AUTOTUNE),
 
     test_normal
-      .flat_map(apply_transforms)
-      .batch(FLAGS.batch_size),
+    .flat_map(apply_transforms)
+    .batch(FLAGS.batch_size)
+    .prefetch(tf.data.AUTOTUNE),
 
     test_anomalous
-      .flat_map(apply_transforms)
-      .batch(FLAGS.batch_size),
+    .flat_map(apply_transforms)
+    .batch(FLAGS.batch_size)
+    .prefetch(tf.data.AUTOTUNE),
   )
