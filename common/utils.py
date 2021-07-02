@@ -1,6 +1,7 @@
 import logging
 
 import numpy as np
+import tensorflow as tf
 
 
 def roundrobin_generator(arr, batch_size=1, rng=np.random.default_rng()):
@@ -40,3 +41,10 @@ def roundrobin_generator(arr, batch_size=1, rng=np.random.default_rng()):
       start, end = end, end + batch_size
     used_indices = np.concatenate(used_idx_batches)
     cur_perm = np.concatenate((cur_perm[start:], rng.permutation(used_indices)))
+
+
+def matrix_to_transform(matrix):
+  """Convert a 3x3 affine transformation matrix to a vector"""
+  transform = tf.reshape(matrix, [1, -1])
+  # The last element is always 1.
+  return transform[:, 0:8]
