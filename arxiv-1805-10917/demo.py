@@ -25,7 +25,7 @@ def main(_argv):
    test_anomalous) = data.get_datasets()
   m = model.get_model(n_transforms)
 
-  m.fit(train_normal, epochs=FLAGS.epochs)
+  m.fit(train_normal, epochs=FLAGS.epochs, validation_data=test_normal)
 
 
 if __name__ == "__main__":
