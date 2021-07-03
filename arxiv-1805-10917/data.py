@@ -1,3 +1,4 @@
+from multiprocessing.spawn import prepare
 import tensorflow as tf
 import tensorflow_datasets as tfds
 from absl import flags
@@ -63,33 +64,20 @@ def get_datasets():
     data = [(t(x), tf.repeat(i, len(x))) for i, t in enumerate(transforms)]
     xx = tf.concat([d[0] for d in data], axis=0)
     yy = tf.concat([d[1] for d in data], axis=0)
-    ds = tf.data.Dataset.from_tensor_slices((xx, yy))
+    return tf.data.Dataset.from_tensor_slices((xx, yy))
+
+  def prepare_dataset(ds, shuffle=True):
+    ds = ds.flat_map(apply_transforms)
     if FLAGS.cache.lower() != "none":
       ds = ds.cache(FLAGS.cache)
-    return ds
+    if shuffle:
+      ds = ds.shuffle(FLAGS.shuffle_buffer)
+    return ds.batch(FLAGS.batch_size).prefetch(tf.data.AUTOTUNE)
 
   return (
-    len(transforms), \
-
-    train_normal
-    .flat_map(apply_transforms)
-    .shuffle(FLAGS.shuffle_buffer)
-    .batch(FLAGS.batch_size)
-    .prefetch(tf.data.AUTOTUNE),
-
-    train_anomalous
-    .flat_map(apply_transforms)
-    .shuffle(FLAGS.shuffle_buffer)
-    .batch(FLAGS.batch_size)
-    .prefetch(tf.data.AUTOTUNE),
-
-    test_normal
-    .flat_map(apply_transforms)
-    .batch(FLAGS.batch_size)
-    .prefetch(tf.data.AUTOTUNE),
-
-    test_anomalous
-    .flat_map(apply_transforms)
-    .batch(FLAGS.batch_size)
-    .prefetch(tf.data.AUTOTUNE),
+    len(transforms),
+    prepare_dataset(train_normal),
+    prepare_dataset(train_anomalous),
+    prepare_dataset(test_normal, shuffle=False),
+    prepare_dataset(test_anomalous, shuffle=False),
   )
