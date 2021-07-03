@@ -20,7 +20,7 @@ FLAGS = flags.FLAGS
 flags.DEFINE_integer("epochs", 100, "Number of training epochs", lower_bound=1)
 
 
-def main(_argv):
+def main(argv):
   (n_transforms, train_normal, train_anomalous, test_normal,
    test_anomalous) = data.get_datasets()
   m = model.get_model(n_transforms)

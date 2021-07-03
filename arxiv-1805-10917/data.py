@@ -1,4 +1,3 @@
-from multiprocessing.spawn import prepare
 import tensorflow as tf
 import tensorflow_datasets as tfds
 from absl import flags
@@ -72,7 +71,9 @@ def get_datasets():
       ds = ds.cache(FLAGS.cache)
     if shuffle:
       ds = ds.shuffle(FLAGS.shuffle_buffer)
-    return ds.batch(FLAGS.batch_size).prefetch(tf.data.AUTOTUNE)
+    return ds.batch(
+      FLAGS.batch_size,
+      num_parallel_calls=tf.data.AUTOTUNE).prefetch(tf.data.AUTOTUNE)
 
   return (
     len(transforms),
