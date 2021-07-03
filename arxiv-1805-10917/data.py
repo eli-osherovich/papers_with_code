@@ -19,7 +19,7 @@ flags.DEFINE_multi_integer(
 )
 
 flags.DEFINE_integer(
-  "shuffle_buffer", 1000, "Shuffle buffer size.", lower_bound=1)
+  "shuffle_buffer", 5000, "Shuffle buffer size.", lower_bound=1)
 flags.DEFINE_integer("batch_size", 256, "Batch size.", lower_bound=1)
 flags.DEFINE_string("cache", "", "Cache file for datasets.")
 
