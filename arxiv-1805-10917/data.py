@@ -28,7 +28,8 @@ def preprocessing(x, y):
   return tf.image.convert_image_dtype(x, tf.keras.backend.floatx()), y
 
 
-def filter_normal(_x, y):
+def filter_normal(x, y):
+  del x  # unused parameter
   # Actual code is equivalent to the line below, but
   # suitable for a graph execution:
   # return y in FLAGS.normal
@@ -60,6 +61,7 @@ def get_datasets():
 
   @tf.function
   def apply_transforms(x, y):
+    del y  # unused parameter
     data = [(t(x), tf.repeat(i, len(x))) for i, t in enumerate(transforms)]
     xx = tf.concat([d[0] for d in data], axis=0)
     yy = tf.concat([d[1] for d in data], axis=0)
