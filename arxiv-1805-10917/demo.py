@@ -11,21 +11,15 @@ if __name__ == "__main__" and __package__ is None:
   sys.path.append(os.path.join(pkg_path, ".."))
   __package__ = f"{pkg_name}.{module_name}"  # noqa: A001
 
-from absl import app, flags
+from absl import app
 
-from . import data, model
-
-FLAGS = flags.FLAGS
-
-flags.DEFINE_integer("epochs", 100, "Number of training epochs", lower_bound=1)
+from . import training
 
 
 def main(argv):
-  (n_transforms, train_normal, train_anomalous, test_normal,
-   test_anomalous) = data.get_datasets()
-  m = model.get_model(n_transforms)
-
-  m.fit(train_normal, epochs=FLAGS.epochs, validation_data=test_normal)
+  del argv  # unused parameter
+  model = training.train()
+  del model  # unused
 
 
 if __name__ == "__main__":
