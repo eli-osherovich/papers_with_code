@@ -10,10 +10,13 @@ FLAGS = flags.FLAGS
 
 flags.DEFINE_integer("tx", 8, "x-axis translation (in pixels).")
 flags.DEFINE_integer("ty", 8, "y-axis translation (in pixels).")
-flags.DEFINE_enum("fill_mode", "reflect",
-                  ["reflect", "wrap", "constant", "nearest"], "Fill mode.")
-flags.DEFINE_enum("interpolation", "bilinear", ["nearest", "bilinear"],
-                  "Interpolation mode.")
+flags.DEFINE_enum(
+  "fill_mode", "reflect", ["reflect", "wrap", "constant", "nearest"],
+  "Fill mode."
+)
+flags.DEFINE_enum(
+  "interpolation", "bilinear", ["nearest", "bilinear"], "Interpolation mode."
+)
 
 
 def get_translation_transform(tx=0, ty=0, fill_value=0, output_shape=None):
@@ -38,7 +41,8 @@ def get_translation_transform(tx=0, ty=0, fill_value=0, output_shape=None):
       output_shape=output_shape,
       fill_value=fill_value,
       interpolation=FLAGS.interpolation.upper(),
-      fill_mode=FLAGS.fill_mode.upper())
+      fill_mode=FLAGS.fill_mode.upper()
+    )
 
   return _translation
 
@@ -68,11 +72,12 @@ def combine_transforms(*transforms):
 def get_transforms():
   lr_flips = [identity, get_flip_lr_transform()]
   translations = [
-    get_translation_transform(tx, ty) for tx, ty in itertools.product(
-      [0, FLAGS.tx, -FLAGS.tx], [0, FLAGS.ty, -FLAGS.ty])
+    get_translation_transform(tx, ty) for tx, ty in
+    itertools.product([0, FLAGS.tx, -FLAGS.tx], [0, FLAGS.ty, -FLAGS.ty])
   ]
   rotations = [get_rot90_transform(k) for k in [0, 1, 2, 3]]
 
   transforms = itertools.starmap(
-    combine_transforms, itertools.product(lr_flips, translations, rotations))
+    combine_transforms, itertools.product(lr_flips, translations, rotations)
+  )
   return list(transforms)

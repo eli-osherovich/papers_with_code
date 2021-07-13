@@ -7,10 +7,12 @@ class TreeModel(tf.keras.Model):
 
   def __init__(self, depth, n_classes=10):
     super().__init__()
-    self.model = tf.keras.Sequential([
-      tf.keras.layers.Flatten(),
-      build_tree(depth, n_classes),
-    ])
+    self.model = tf.keras.Sequential(
+      [
+        tf.keras.layers.Flatten(),
+        build_tree(depth, n_classes),
+      ]
+    )
 
   def call(self, inputs: tf.Tensor):
     return self.model(inputs)

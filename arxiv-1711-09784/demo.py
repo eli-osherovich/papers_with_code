@@ -26,20 +26,25 @@ def parse_args():
     "--depth",
     type=int,
     default=9,
-    help="Tree depth (including root and leaves)")
+    help="Tree depth (including root and leaves)"
+  )
   parser.add_argument(
-    "--epochs", type=int, default=1000, help="Number of epochs")
+    "--epochs", type=int, default=1000, help="Number of epochs"
+  )
   parser.add_argument("--batch-size", type=int, default=1024, help="Batch size")
   parser.add_argument(
-    "--shuffle-buffer", type=int, default=60000, help="Shuffle buffer size")
+    "--shuffle-buffer", type=int, default=60000, help="Shuffle buffer size"
+  )
   parser.add_argument(
-    "--patience", type=int, default=10, help="Early stopping patience")
+    "--patience", type=int, default=10, help="Early stopping patience"
+  )
   parser.add_argument(
     "--keep-last",
     default=False,
     dest="keep_last",
     action="store_true",
-    help="Keep last model (by default) the best model is kept")
+    help="Keep last model (by default) the best model is kept"
+  )
 
   args = parser.parse_args()
   return args
@@ -49,7 +54,8 @@ def main():
   args = parse_args()
 
   train_ds, val_ds = tfds.load(
-    "mnist", split=["train", "test"], shuffle_files=False, as_supervised=True)
+    "mnist", split=["train", "test"], shuffle_files=False, as_supervised=True
+  )
 
   train_ds = train_ds\
     .map(lambda x, y: (x / 255, y), num_parallel_calls=tf.data.AUTOTUNE)\
@@ -69,16 +75,19 @@ def main():
   early_stop = tf.keras.callbacks.EarlyStopping(
     monitor="val_acc",
     patience=args.patience,
-    restore_best_weights=not args.keep_last)
+    restore_best_weights=not args.keep_last
+  )
 
   model.compile(
     loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-    metrics=["acc"])
+    metrics=["acc"]
+  )
   model.fit(
     train_ds,
     epochs=args.epochs,
     validation_data=val_ds,
-    callbacks=[early_stop])
+    callbacks=[early_stop]
+  )
   model.save("model")
 
 

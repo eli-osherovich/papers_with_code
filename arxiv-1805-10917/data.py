@@ -19,7 +19,8 @@ flags.DEFINE_multi_integer(
 )
 
 flags.DEFINE_integer(
-  "shuffle_buffer", 5000, "Shuffle buffer size.", lower_bound=1)
+  "shuffle_buffer", 5000, "Shuffle buffer size.", lower_bound=1
+)
 flags.DEFINE_integer("batch_size", 256, "Batch size.", lower_bound=1)
 flags.DEFINE_string("cache", "", "Cache file for datasets.")
 
@@ -52,7 +53,8 @@ def split_normal_anomalous(ds):
 
 def get_datasets():
   train, test = tfds.load(
-    FLAGS.dataset, split=["train", "test"], as_supervised=True)
+    FLAGS.dataset, split=["train", "test"], as_supervised=True
+  )
 
   train_normal, train_anomalous = split_normal_anomalous(train)
   test_normal, test_anomalous = split_normal_anomalous(test)
@@ -74,8 +76,8 @@ def get_datasets():
     if shuffle:
       ds = ds.shuffle(FLAGS.shuffle_buffer)
     return ds.batch(
-      FLAGS.batch_size,
-      num_parallel_calls=tf.data.AUTOTUNE).prefetch(tf.data.AUTOTUNE)
+      FLAGS.batch_size, num_parallel_calls=tf.data.AUTOTUNE
+    ).prefetch(tf.data.AUTOTUNE)
 
   return (
     len(transforms),
