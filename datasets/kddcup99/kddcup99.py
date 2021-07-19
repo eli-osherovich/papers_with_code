@@ -21,9 +21,7 @@ class KddCup99():
     ds_path = download.download_dataset(ds_name, dl_config.DATASETS)
     with ds_path.open('rb') as f:
       with gzip.open(f, 'rt', newline='') as gz:
-        df = pd.read_csv(
-          gz, header=0, names=self.feature_dict, dtype=self.feature_dict
-        )
+        df = pd.read_csv(gz, names=self.feature_dict, dtype=self.feature_dict)
         target = df.pop(self._TARGET_COLUMN)
         df = pd.get_dummies(df)
         target = target == self._NORMAL_LABEL
@@ -32,7 +30,9 @@ class KddCup99():
           (df.to_numpy(dtype=np.float32), target.to_numpy(dtype=np.float32))
         )
 
-  def get_datasets(self):
-    df_train = self._generate_ds('train')
-    df_test = self._generate_ds('test')
-    return df_train, df_test
+  def get_datasets(self, *splits):
+    res = tuple(self._generate_ds(s) for s in splits)
+    if len(res) == 1:
+      return res[0]
+    else:
+      return res

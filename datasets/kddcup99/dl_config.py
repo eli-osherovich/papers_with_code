@@ -1,4 +1,11 @@
 DATASETS = {
+  'train_10p':
+    {
+      'url':
+        'http://kdd.ics.uci.edu/databases/kddcup99/kddcup.data_10_percent.gz',
+      'checksum':
+        '8045aca0d84e70e622d1148d7df782496f6333bf6eb979a1b0837c42a9fd9561'
+    },
   'train':
     {
       'url':
