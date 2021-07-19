@@ -1,5 +1,6 @@
 import gzip
 
+import numpy as np
 import pandas as pd
 import tensorflow as tf
 
@@ -27,9 +28,11 @@ class KddCup99():
         df = pd.get_dummies(df)
         target = target == self._NORMAL_LABEL
 
-        return tf.data.Dataset.from_tensor_slices((df.values, target.values))
+        return tf.data.Dataset.from_tensor_slices(
+          (df.to_numpy(dtype=np.float32), target.to_numpy(dtype=np.float32))
+        )
 
-  def get_dfs(self):
+  def get_datasets(self):
     df_train = self._generate_ds('train')
     df_test = self._generate_ds('test')
     return df_train, df_test
