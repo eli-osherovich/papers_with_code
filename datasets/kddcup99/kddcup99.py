@@ -4,21 +4,18 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 
-from .. import download
-from . import dl_config, ds_config
+from .. import dataset
 
 
-class KddCup99():
+class KddCup99(dataset.Dataset):
   """KDD Cup 99 dataset."""
 
   _TARGET_COLUMN = 'label'
   _NORMAL_LABEL = 'normal.'
 
-  feature_dict = ds_config.feature_dict
-
   def _generate_ds(self, ds_name):
     """Generate dataframe"""
-    ds_path = download.download_dataset(ds_name, dl_config.DATASETS)
+    ds_path = self.download_dataset(ds_name)
     with ds_path.open('rb') as f:
       with gzip.open(f, 'rt', newline='') as gz:
         df = pd.read_csv(gz, names=self.feature_dict, dtype=self.feature_dict)
@@ -29,10 +26,3 @@ class KddCup99():
         return tf.data.Dataset.from_tensor_slices(
           (df.to_numpy(dtype=np.float32), target.to_numpy(dtype=np.float32))
         )
-
-  def get_datasets(self, *splits):
-    res = tuple(self._generate_ds(s) for s in splits)
-    if len(res) == 1:
-      return res[0]
-    else:
-      return res
