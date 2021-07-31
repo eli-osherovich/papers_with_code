@@ -1,7 +1,7 @@
 import importlib
 import abc
 
-from . import download
+from . import io
 
 
 class Dataset(abc.ABC):
@@ -21,7 +21,7 @@ class Dataset(abc.ABC):
     return ds_config.feature_dict
 
   def download_dataset(self, ds_name):
-    return download.download_dataset(ds_name, self.config_datasets)
+    return io.download_dataset(ds_name, self.config_datasets)
 
   def get_datasets(self, *splits):
     res = tuple(self._generate_ds(s) for s in splits)
