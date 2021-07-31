@@ -26,11 +26,11 @@ def download_dataset(
 
   cache_dir.mkdir(parents=True, exist_ok=True)
 
-  url = dl_config[ds_name]['url']
+  uri = dl_config[ds_name]['uri']
   checksum = dl_config[ds_name].get('checksum')
 
   data_path = tf.keras.utils.get_file(
-    origin=url, file_hash=checksum, cache_dir=cache_dir, cache_subdir='.'
+    origin=uri, file_hash=checksum, cache_dir=cache_dir, cache_subdir='.'
   )
   return pathlib.Path(data_path)
 
