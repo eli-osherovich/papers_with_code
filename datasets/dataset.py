@@ -1,10 +1,13 @@
 import importlib
-import abc
+
+import pandas as pd
+import tensorflow as tf
+import numpy as np
 
 from . import io
 
 
-class Dataset(abc.ABC):
+class Dataset():
 
   @property
   def cls_package(self):
@@ -23,13 +26,36 @@ class Dataset(abc.ABC):
   def download_dataset(self, ds_name):
     return io.download_dataset(ds_name, self.config_datasets)
 
-  def get_datasets(self, *splits):
-    res = tuple(self._generate_ds(s) for s in splits)
-    if len(res) == 1:
-      return res[0]
-    else:
-      return res
+  def as_dataset(self, *splits):
+    res = tuple(self._generate_dataset(s) for s in splits)
+    return squeeze(res)
 
-  @abc.abstractmethod
-  def _generate_ds(self, ds_name):
+  def as_dataframe(self, *splits):
+    res = tuple(self._generate_dataframe(s) for s in splits)
+    return squeeze(res)
+
+  def as_numpy(self, *splits):
+    res = tuple(self._generate_numpy(s) for s in splits)
+    return squeeze(res)
+
+  def _generate_dataframe(self, split_name):
     raise NotImplementedError
+
+  def _generate_numpy(self, split_name):
+    dataframes = self._generate_dataframe(split_name)
+    if isinstance(dataframes, (tuple, list)):
+      arrays = tuple(df.to_numpy(dtype=np.float32) for df in dataframes)
+    elif isinstance(dataframes, pd.DataFrame):
+      arrays = dataframes.to_numpy(dtype=np.float32)
+    return arrays
+
+  def _generate_dataset(self, split_name):
+    arrays = self._generate_numpy(split_name)
+    return tf.data.Dataset.from_tensor_slices(arrays)
+
+
+def squeeze(vec):
+  if len(vec) == 1:
+    return vec[0]
+  else:
+    return vec
