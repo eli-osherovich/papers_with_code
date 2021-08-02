@@ -1,5 +1,7 @@
 from absl import flags
+from ray import tune
 from sklearn import model_selection
+import numpy as np
 
 from .. import data, model
 
@@ -15,33 +17,49 @@ flags.DEFINE_string('save_dir', './saved_model', 'Model save directory.')
 
 
 def train():
-  X, y = data.get_numpy()
-
-  X_train, X_test, y_train, y_test = model_selection.train_test_split(
-    X, y, test_size=0.2, stratify=y
-  )
-
-  m = model.get_model()
-
-  # specify parameters via map, definition are same as c++ version
-  params = {
-    'n_estimators': 3000,
-    'objective': 'binary:logistic',
-    'learning_rate': 0.01,
+  tunable_params = {
+    'learning_rate': tune.loguniform(1e-4, 1e-1),
+    'max_depth': tune.randint(1, 9),
+    'min_child_weight': tune.choice([1, 2, 3]),
+    'subsample': tune.uniform(0.5, 1.0),
+    'colsample_bytree': tune.uniform(0.2, 1),
     #'gamma':0.1,
-    #'subsample':0.8,
-    #'colsample_bytree':0.3,
-    #'min_child_weight':3,
-    'max_depth': 3,
-    #'seed':1024,
-    'n_jobs': -1
   }
-  m.set_params(**params)
-  m.fit(
-    X_train,
-    y_train,
-    eval_set=[(X_test, y_test)],
-    eval_metric='auc',
-    early_stopping_rounds=100,
-    verbose=True,
+
+  X, y = data.get_numpy()
+  m = model.get_model()
+  m.set_params(n_estimators=10000, objective='binary:logistic', n_jobs=1)
+
+  def tuneable(config):
+
+    m.set_params(**config)
+    res = []
+    for i in range(10):
+      X_train, X_test, y_train, y_test = model_selection.train_test_split(
+        X, y, test_size=0.2, stratify=y
+      )
+
+      m.fit(
+        X_train,
+        y_train,
+        eval_set=[(X_test, y_test)],
+        eval_metric='auc',
+        early_stopping_rounds=1000,
+        verbose=False,
+      )
+      res.append(m.best_score)
+    return {
+      'auc_mean': np.mean(res),
+      'auc_std': np.std(res),
+      'auc_min': np.min(res),
+      'auc_max': np.max(res),
+    }
+
+  analysis = tune.run(
+    tuneable,
+    config=tunable_params,
+    num_samples=100,
+    mode='max',
+    metric='auc_mean',
   )
+  print('Best result: ', analysis.best_result)
