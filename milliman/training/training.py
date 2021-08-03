@@ -1,50 +1,70 @@
-from absl import flags
-from ray import tune
-from sklearn import model_selection
 import numpy as np
+import ray.tune
+from absl import flags
+from ray.tune.suggest.hyperopt import HyperOptSearch as search_alg
+from sklearn import model_selection
 
 from .. import data, model
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_integer('epochs', 100, 'Number of training epochs', lower_bound=1)
-flags.DEFINE_enum('keep', 'best', ['last', 'best'], 'Which model to keep.')
-flags.DEFINE_integer('patience', 10, 'Early stopping patience.', lower_bound=0)
-flags.DEFINE_string(
-  'monitor', 'val_accuracy', 'Early stopping quantity to monitor.'
+flags.DEFINE_integer(
+  'k_folds', 5, 'Number of k-folds in repeated CV.', lower_bound=2
 )
+
+flags.DEFINE_integer(
+  'n_repeats', 20, 'Number of repeats in repeated CV.', lower_bound=1
+)
+
+flags.DEFINE_integer(
+  'patience', 1000, 'Early stopping patience.', lower_bound=1
+)
+
+flags.DEFINE_integer(
+  'cv_random_state', 42, 'CV splitter random_state', lower_bound=0
+)
+
 flags.DEFINE_string('save_dir', './saved_model', 'Model save directory.')
 
 
 def train():
   tunable_params = {
-    'learning_rate': tune.loguniform(1e-4, 1e-1),
-    'max_depth': tune.randint(1, 9),
-    'min_child_weight': tune.choice([1, 2, 3]),
-    'subsample': tune.uniform(0.5, 1.0),
-    'colsample_bytree': tune.uniform(0.2, 1),
-    #'gamma':0.1,
+    'alpha': ray.tune.uniform(0, 1),
+    'colsample_bytree': ray.tune.uniform(0.2, 1),
+    'gamma': ray.tune.uniform(0, 1),
+    'lambda': ray.tune.uniform(0, 10),
+    'learning_rate': ray.tune.loguniform(1e-3, 1e-1),
+    'max_depth': ray.tune.randint(3, 10),
+    'min_child_weight': ray.tune.choice([1, 2, 3, 4, 5, 6]),
+    'subsample': ray.tune.uniform(0.5, 1.0),
   }
 
   X, y = data.get_numpy()
   m = model.get_model()
-  m.set_params(n_estimators=10000, objective='binary:logistic', n_jobs=1)
+  m.set_params(n_estimators=100_000, objective='binary:logistic', n_jobs=1)
+
+  # It seems that FLAGs are not pickable...
+  k_folds = FLAGS.k_folds
+  n_repeats = FLAGS.n_repeats
+  cv_random_state = FLAGS.cv_random_state
+  patience = FLAGS.patience
 
   def tuneable(config):
-
     m.set_params(**config)
+    cv_splitter = model_selection.RepeatedStratifiedKFold(
+      n_splits=k_folds, n_repeats=n_repeats, random_state=cv_random_state
+    )
     res = []
-    for i in range(10):
-      X_train, X_test, y_train, y_test = model_selection.train_test_split(
-        X, y, test_size=0.2, stratify=y
-      )
+    for train_index, test_index in cv_splitter.split(X, y, y):
+      X_train, X_test = X[train_index], X[test_index]
+      y_train, y_test = y[train_index], y[test_index]
 
       m.fit(
         X_train,
         y_train,
         eval_set=[(X_test, y_test)],
         eval_metric='auc',
-        early_stopping_rounds=1000,
+        early_stopping_rounds=patience,
         verbose=False,
       )
       res.append(m.best_score)
@@ -55,11 +75,14 @@ def train():
       'auc_max': np.max(res),
     }
 
-  analysis = tune.run(
+  # ray.init()
+  analysis = ray.tune.run(
     tuneable,
     config=tunable_params,
-    num_samples=100,
-    mode='max',
     metric='auc_mean',
+    mode='max',
+    num_samples=5000,
+    search_alg=search_alg(metric='auc_mean', mode='max'),
+    fail_fast=True,
   )
   print('Best result: ', analysis.best_result)
