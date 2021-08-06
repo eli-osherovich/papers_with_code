@@ -28,26 +28,55 @@ flags.DEFINE_string('save_dir', './saved_model', 'Model save directory.')
 
 
 def train():
-  tunable_params = {
-    'alpha': ray.tune.uniform(0, 1),
-    'colsample_bytree': ray.tune.uniform(0.2, 1),
-    'gamma': ray.tune.uniform(0, 1),
-    'lambda': ray.tune.uniform(0, 10),
-    'learning_rate': ray.tune.loguniform(1e-3, 1e-1),
-    'max_depth': ray.tune.randint(3, 10),
-    'min_child_weight': ray.tune.choice([1, 2, 3, 4, 5, 6]),
-    'subsample': ray.tune.uniform(0.5, 1.0),
-  }
-
-  X, y = data.get_numpy()
-  m = model.get_model()
-  m.set_params(n_estimators=100_000, objective='binary:logistic', n_jobs=1)
-
   # It seems that FLAGs are not pickable...
   k_folds = FLAGS.k_folds
   n_repeats = FLAGS.n_repeats
   cv_random_state = FLAGS.cv_random_state
   patience = FLAGS.patience
+
+  X, y = data.get_numpy()
+
+  n_pos = y.sum()
+  n_neg = y.size - n_pos
+
+  n_features = X.shape[-1]
+  train_samples = int(X.shape[0] / k_folds * (k_folds - 1))
+
+  tunable_params = {
+    # 'alpha': ray.tune.uniform(0, 1),
+
+    # The number of columns is an integer, hence,
+    # we do not need to sample continuum. Note that the expression
+    # of the type round(x / (1/y)) * (1/y) creates x' that is divisible by y.
+    'colsample_bytree':
+      ray.tune.quniform(
+        round(0.2 * n_features) / n_features, 1, 1 / n_features
+      ),
+    # 'gamma':
+    #   ray.tune.uniform(0, 1),
+    # 'lambda':
+    #   ray.tune.uniform(0, 2),
+    'learning_rate':
+      ray.tune.loguniform(1e-3, 1e-1),
+    'max_depth':
+      ray.tune.randint(4, 10),
+    'min_child_weight':
+      ray.tune.choice([1, 2, 3, 4, 5, 6]),
+    'scale_pos_weight':
+      ray.tune.uniform(1, n_neg / n_pos),
+
+    # The number of training samples in an integer, hence,
+    # we do not need to sample continuum. Note that the expression
+    # of the type round(x / (1/y)) * (1/y) creates x' that is divisible by y.
+    'subsample':
+      ray.tune.quniform(
+        round(0.5 * train_samples) / train_samples, 1.0, 1 / train_samples
+      ),
+  }
+
+  X, y = data.get_numpy()
+  m = model.get_model()
+  m.set_params(n_estimators=100_000, objective='binary:logistic', n_jobs=1)
 
   def tuneable(config):
     m.set_params(**config)
@@ -75,7 +104,7 @@ def train():
       'auc_max': np.max(res),
     }
 
-  # ray.init()
+  ray.init()
   analysis = ray.tune.run(
     tuneable,
     config=tunable_params,
