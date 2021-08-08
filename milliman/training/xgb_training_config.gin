@@ -1,0 +1,10 @@
+xgb_train.colsample_bytree = 0.20930232558139533
+xgb_train.learning_rate = 0.004016742330668247
+xgb_train.max_depth = 5
+xgb_train.min_child_weight = 2
+xgb_train.scale_pos_weight = 1.7449593398035106
+xgb_train.subsample = 0.6012500000000001
+xgb_train.train_size = 0.2
+xgb_train.random_state = 42
+xgb_train.n_estimators = 1_000_000
+xgb_train.patience = 200

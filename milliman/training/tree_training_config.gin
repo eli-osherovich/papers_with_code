@@ -1,0 +1,8 @@
+tree_train.depth = 3
+tree_train.epochs = 10000
+tree_train.train_size = 0.2
+tree_train.batch_size = 256
+tree_train.patience = 200
+tree_train.shuffle_buf_size = 1000
+tree_train.random_state = 42
+tree_train.keep_last = False
