@@ -1,6 +1,6 @@
 tree_train.depth = 3
 tree_train.epochs = 10000
-tree_train.train_size = 0.2
+tree_train.train_size = 0.8
 tree_train.batch_size = 256
 tree_train.patience = 100
 tree_train.shuffle_buf_size = 1000
