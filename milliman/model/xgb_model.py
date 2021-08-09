@@ -1,5 +1,34 @@
+import pathlib
+
+import gin
 import xgboost as xgb
 
+GIN_CONFIG_FILE = 'xgb_model_config.gin'
 
-def get_xgb_model(**kwargs):
-  return xgb.XGBClassifier(use_label_encoder=False, **kwargs)
+
+@gin.configurable
+def get_xgb_model(
+  n_estimators,
+  objective,
+  colsample_bytree,
+  learning_rate,
+  max_depth,
+  min_child_weight,
+  scale_pos_weight,
+  subsample,
+  random_state,
+):
+  return xgb.XGBClassifier(
+    n_estimators=n_estimators,
+    objective=objective,
+    colsample_bytree=colsample_bytree,
+    learning_rate=learning_rate,
+    max_depth=max_depth,
+    min_child_weight=min_child_weight,
+    scale_pos_weight=scale_pos_weight,
+    subsample=subsample,
+    random_state=random_state,
+  )
+
+
+gin.parse_config_file(pathlib.Path(__file__).parent.resolve() / GIN_CONFIG_FILE)
