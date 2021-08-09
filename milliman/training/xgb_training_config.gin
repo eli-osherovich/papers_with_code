@@ -7,4 +7,4 @@ xgb_train.subsample = 0.6012500000000001
 xgb_train.train_size = 0.2
 xgb_train.random_state = 42
 xgb_train.n_estimators = 1_000_000
-xgb_train.patience = 200
+xgb_train.patience = 100
