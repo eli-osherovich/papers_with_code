@@ -1,3 +1,8 @@
 xgb_train.test_size = 0.2
 xgb_train.random_state = 42
 xgb_train.patience = 100
+
+xgb_train_cv.k_folds = 5
+xgb_train_cv.patience = 100
+xgb_train_cv.random_state = 42
+xgb_train_cv.repeats = 10

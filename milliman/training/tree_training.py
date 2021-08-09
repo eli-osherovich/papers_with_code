@@ -9,27 +9,10 @@ from .. import data, model
 GIN_CONFIG_FILE = 'tree_training_config.gin'
 
 
-@gin.configurable
-def tree_train(
-  depth: int,
-  epochs: int,
-  test_size: float,
-  batch_size: int,
-  patience: int,
-  shuffle_buf_size: int,
-  random_state: int,
-  keep_last: bool,
-  scale_pos_weight=float,
+def _train_model(
+  X_train, y_train, model_, X_val, y_val, epochs, batch_size, shuffle_buf_size,
+  scale_pos_weight, callbacks, verbose
 ):
-
-  X, y = data.get_numpy()
-  X_train, X_val, y_train, y_val = train_test_split(
-    X,
-    y,
-    stratify=y,
-    test_size=test_size,
-    random_state=random_state,
-  )
   X_mean = X_train.mean(axis=0)
   X_std = X_train.std(axis=0)
 
@@ -41,8 +24,43 @@ def tree_train(
   ).shuffle(shuffle_buf_size).batch(batch_size)
 
   val_ds = tf.data.Dataset.from_tensor_slices((X_val, y_val)).batch(batch_size)
+  class_weight = {0: 1.0, 1: scale_pos_weight}
 
-  m = model.get_tree_model(depth)
+  model_.fit(
+    train_ds,
+    epochs=epochs,
+    validation_data=val_ds,
+    callbacks=callbacks,
+    class_weight=class_weight,
+    verbose=verbose
+  )
+
+  return model_
+
+
+@gin.configurable
+def tree_train(
+  X,
+  y,
+  epochs: int,
+  test_size: float,
+  batch_size: int,
+  patience: int,
+  shuffle_buf_size: int,
+  random_state: int,
+  keep_last: bool,
+  scale_pos_weight=float,
+):
+
+  X_train, X_val, y_train, y_val = train_test_split(
+    X,
+    y,
+    stratify=y,
+    test_size=test_size,
+    random_state=random_state,
+  )
+
+  m = model.get_tree_model()
 
   early_stop = tf.keras.callbacks.EarlyStopping(
     monitor='val_auc',
@@ -51,17 +69,22 @@ def tree_train(
     restore_best_weights=not keep_last,
   )
 
-  class_weight = {0: 1.0, 1: scale_pos_weight}
   m.compile(
     loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
     metrics=['acc', tf.keras.metrics.AUC(from_logits=True)]
   )
-  m.fit(
-    train_ds,
-    epochs=epochs,
-    validation_data=val_ds,
-    callbacks=[early_stop],
-    class_weight=class_weight,
+  m = _train_model(
+    X_train,
+    y_train,
+    m,
+    X_val,
+    y_val,
+    epochs,
+    batch_size,
+    shuffle_buf_size,
+    scale_pos_weight,
+    [early_stop],
+    verbose=2,
   )
   m.save('saved_model/tree_model')
 
