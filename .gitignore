@@ -130,3 +130,9 @@ dmypy.json
 
 # VS Code
 .vscode/
+
+# Notebooks
+*.ipynb
+
+# Models
+saved_model/
