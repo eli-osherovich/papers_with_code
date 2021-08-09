@@ -17,7 +17,7 @@ def xgb_train(
   scale_pos_weight: float,
   subsample: float,
   random_state: int,
-  train_size: float,
+  test_size: float,
   n_estimators: int,
   patience: int,
 ):
@@ -27,7 +27,7 @@ def xgb_train(
     X,
     y,
     stratify=y,
-    train_size=train_size,
+    test_size=test_size,
     random_state=random_state,
   )
 

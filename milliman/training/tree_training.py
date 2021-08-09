@@ -13,7 +13,7 @@ GIN_CONFIG_FILE = 'tree_training_config.gin'
 def tree_train(
   depth: int,
   epochs: int,
-  train_size: float,
+  test_size: float,
   batch_size: int,
   patience: int,
   shuffle_buf_size: int,
@@ -27,7 +27,7 @@ def tree_train(
     X,
     y,
     stratify=y,
-    train_size=train_size,
+    test_size=test_size,
     random_state=random_state,
   )
   X_mean = X_train.mean(axis=0)
