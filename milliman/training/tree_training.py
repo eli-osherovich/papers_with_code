@@ -19,6 +19,7 @@ def tree_train(
   shuffle_buf_size: int,
   random_state: int,
   keep_last: bool,
+  scale_pos_weight=float,
 ):
 
   X, y = data.get_numpy()
@@ -50,11 +51,18 @@ def tree_train(
     restore_best_weights=not keep_last,
   )
 
+  class_weight = {0: 1.0, 1: scale_pos_weight}
   m.compile(
     loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
     metrics=['acc', tf.keras.metrics.AUC(from_logits=True)]
   )
-  m.fit(train_ds, epochs=epochs, validation_data=val_ds, callbacks=[early_stop])
+  m.fit(
+    train_ds,
+    epochs=epochs,
+    validation_data=val_ds,
+    callbacks=[early_stop],
+    class_weight=class_weight,
+  )
   m.save('saved_model/tree_model')
 
 

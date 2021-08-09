@@ -6,3 +6,4 @@ tree_train.patience = 100
 tree_train.shuffle_buf_size = 1000
 tree_train.random_state = 42
 tree_train.keep_last = False
+tree_train.scale_pos_weight = 2.33
