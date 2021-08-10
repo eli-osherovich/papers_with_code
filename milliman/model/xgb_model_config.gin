@@ -7,3 +7,4 @@ get_xgb_model.subsample = 0.6012500000000001
 get_xgb_model.colsample_bytree = 0.20930232558139533
 get_xgb_model.scale_pos_weight = 1.7449593398035106
 get_xgb_model.random_state = 0
+get_xgb_model.n_jobs = 1
