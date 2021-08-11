@@ -1,12 +1,8 @@
-import pathlib
-
 import gin
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
 
 from .. import data, model
-
-GIN_CONFIG_FILE = 'tree_training_config.gin'
 
 
 def _train_model(
@@ -39,7 +35,7 @@ def _train_model(
 
 
 @gin.configurable
-def tree_train(
+def train(
   X,
   y,
   epochs: int,
@@ -87,6 +83,3 @@ def tree_train(
     verbose=2,
   )
   m.save('saved_model/tree_model')
-
-
-gin.parse_config_file(pathlib.Path(__file__).parent.resolve() / GIN_CONFIG_FILE)

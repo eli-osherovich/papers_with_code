@@ -1,27 +1,30 @@
-import pathlib
-
 import gin
-from sklearn.model_selection import RepeatedStratifiedKFold, train_test_split
+import numpy as np
+import ray.tune
+from sklearn.model_selection import (
+  RepeatedStratifiedKFold, cross_validate, train_test_split
+)
 
 from .. import model
 
-GIN_CONFIG_FILE = 'xgb_training_config.gin'
 
-
-def _train_model(X_train, y_train, model_, X_val, y_val, patience, verbose):
+def _train_model(
+  X_train, y_train, model_, *, eval_set, patience, eval_metric, verbose
+):
   return model_.fit(
     X_train,
     y_train,
-    eval_set=[(X_train, y_train), (X_val, y_val)],
-    eval_metric='auc',
+    eval_set=eval_set,
+    eval_metric=eval_metric,
     early_stopping_rounds=patience,
     verbose=verbose,
   )
 
 
 @gin.configurable
-def xgb_train(
-  X, y, *, test_size: float, patience: int, random_state: int, **model_args
+def train(
+  X, y, *, test_size: float, eval_metric: str, patience: int, random_state: int,
+  verbose: int, **model_args
 ):
   m = model.get_xgb_model(**model_args)
   X_train, X_val, y_train, y_val = train_test_split(
@@ -31,30 +34,39 @@ def xgb_train(
     test_size=test_size,
     random_state=random_state,
   )
-  return _train_model(X_train, y_train, m, X_val, y_val, patience, verbose=True)
+  m = _train_model(
+    X_train,
+    y_train,
+    m,
+    eval_set=[(X_val, y_val)],
+    eval_metric=eval_metric,
+    patience=patience,
+    verbose=verbose
+  )
+  return m.best_score
 
 
 @gin.configurable
-def xgb_train_cv(
-  X, y, *, k_folds: int, n_repeats: int, patience: int, random_state: int,
-  **model_args
+def train_cv(
+  X, y, *, k_folds: int, n_repeats: int, eval_metric: str, patience: int,
+  random_state: int, verbose: int, scoring, **model_args
 ):
 
   m = model.get_xgb_model(**model_args)
   cv = RepeatedStratifiedKFold(
     n_splits=k_folds, n_repeats=n_repeats, random_state=random_state
   )
-  results = []
-  for train_index, test_index in cv.split(X, y, y):
-    X_train, X_val = X[train_index], X[test_index]
-    y_train, y_val = y[train_index], y[test_index]
-    m = _train_model(X_train, y_train, m, X_val, y_val, patience, verbose=False)
-    results.append(m.best_score)
-  return results
 
-
-def xgb_tune():
-  pass
-
-
-gin.parse_config_file(pathlib.Path(__file__).parent.resolve() / GIN_CONFIG_FILE)
+  cv_res = cross_validate(
+    m,
+    X,
+    y,
+    cv=cv,
+    scoring=scoring,
+    fit_params={
+      'verbose': verbose,
+      'eval_metric': eval_metric,
+      'early_stopping_rounds': patience,
+    }
+  )
+  return cv_res

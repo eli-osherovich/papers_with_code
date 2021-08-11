@@ -1,0 +1,22 @@
+tree_training.train.test_size = 0.2
+tree_training.train.batch_size = 256
+tree_training.train.epochs = 10000
+tree_training.train.keep_last = False
+tree_training.train.patience = 100
+tree_training.train.scale_pos_weight = 2.33
+tree_training.train.shuffle_buf_size = 1000
+tree_training.train.random_state = 42
+
+xgb_training.train.random_state = 42
+xgb_training.train.patience = 100
+xgb_training.train.eval_metric = 'auc'
+xgb_training.train.test_size = 0.2
+xgb_training.train.verbose = True
+
+xgb_training.train_cv.k_folds = 5
+xgb_training.train_cv.patience = 100
+xgb_training.train_cv.random_state = 42
+xgb_training.train_cv.n_repeats = 10
+xgb_training.train_cv.verbose = False
+xgb_training.train_cv.eval_metric = 'auc'
+xgb_training.train_cv.scoring = ('accuracy', 'roc_auc')
