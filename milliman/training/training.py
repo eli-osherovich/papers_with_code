@@ -9,7 +9,9 @@ flags.DEFINE_enum_class(
   'model', model.MODEL.TREE, model.MODEL, 'Model to train'
 )
 
-flags.DEFINE_enum('action', 'train', ['train', 'train_cv'], 'Action to perform')
+flags.DEFINE_enum(
+  'action', 'train', ['train', 'train_cv', 'tune'], 'Action to perform'
+)
 
 
 def _get_action():
@@ -17,6 +19,8 @@ def _get_action():
     return 'train'
   elif FLAGS.action == 'train_cv':
     return 'train_cv'
+  elif FLAGS.action == 'tune':
+    return 'tune'
   else:
     raise RuntimeError('Unknown action: %s', FLAGS.action)
 

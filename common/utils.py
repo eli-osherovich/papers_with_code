@@ -48,3 +48,8 @@ def matrix_to_transform(matrix):
   transform = tf.reshape(matrix, [1, -1])
   # The last element is always 1.
   return transform[:, 0:8]
+
+
+def make_divisible(q, values, dtype=None):
+  """Adjust `values` to closes values divisible by `q`."""
+  return (np.asanyarray(values, dtype=dtype) / q).round() * q
