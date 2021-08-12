@@ -1,3 +1,19 @@
+import optuna
+
+
+cv_params = {
+  'n_splits': 5,
+  'n_repeats': 10,
+  'random_state': 42,
+}
+
+fit_params = {
+  'eval_metric': 'error',
+  'early_stopping_rounds': 100,
+  'verbose': False,
+}
+
+
 tree_training.train.test_size = 0.2
 tree_training.train.batch_size = 256
 tree_training.train.epochs = 10000
@@ -8,36 +24,29 @@ tree_training.train.shuffle_buf_size = 1000
 tree_training.train.random_state = 42
 
 xgb_training.train.random_state = 42
-xgb_training.train.patience = 100
-xgb_training.train.eval_metric = 'auc'
 xgb_training.train.test_size = 0.2
-xgb_training.train.verbose = True
+xgb_training.train.fit_params = %fit_params
 
-xgb_training.train_cv.k_folds = 5
-xgb_training.train_cv.patience = 100
-xgb_training.train_cv.random_state = 42
-xgb_training.train_cv.n_repeats = 10
-xgb_training.train_cv.verbose = False
-xgb_training.train_cv.eval_metric = 'auc'
+xgb_training.train_cv.cv_params = %cv_params
+xgb_training.train_cv.fit_params = %fit_params
 xgb_training.train_cv.scoring = ('accuracy', 'roc_auc')
 
-xgb_training.gen_search_space.colsample_bytree_bounds = (0.2, 0.9)
+xgb_training.gen_search_space.colsample_bytree_bounds = (0.2, 1)
+xgb_training.gen_search_space.gamma_bounds = (0, 5)
 xgb_training.gen_search_space.learning_rate_bounds = (1e-3, 1e-1)
-xgb_training.gen_search_space.max_depth_bounds = (4, 10)
+xgb_training.gen_search_space.max_delta_step_bounds = (0, 10)
+xgb_training.gen_search_space.max_depth_bounds = (5, 12)
 xgb_training.gen_search_space.min_child_weight_bounds = (1, 5)
-xgb_training.gen_search_space.scale_pos_weight_bounds = (1, 2.33)
+xgb_training.gen_search_space.reg_alpha_bounds = (0, 1)
+xgb_training.gen_search_space.reg_lambda_bounds = (0, 2)
+xgb_training.gen_search_space.scale_pos_weight_bounds = (1, 3)
 xgb_training.gen_search_space.subsample_bounds = (0.5, 1)
+
 
 xgb_training.tune.metric = 'test_accuracy_mean'
 xgb_training.tune.mode = 'max'
-xgb_training.tune.num_samples = 10000
-xgb_training.tune.search_alg = @ray.tune.suggest.hyperopt.HyperOptSearch
-xgb_training.tune.cv_params = {
-  'k_folds': 5,
-  'patience': 100,
-  'random_state': 42,
-  'n_repeats': 10,
-  'verbose': False,
-  'eval_metric': 'auc',
-  'scoring': ('accuracy', 'roc_auc'),
-}
+xgb_training.tune.num_samples = 1000
+xgb_training.tune.search_alg = @ray.tune.suggest.optuna.OptunaSearch
+xgb_training.tune.cv_params = %cv_params
+xgb_training.tune.fit_params = %fit_params
+xgb_training.tune.scoring = ('accuracy', 'roc_auc')

@@ -18,6 +18,10 @@ def get_xgb_model(
   scale_pos_weight,
   subsample,
   random_state,
+  gamma,
+  max_delta_step,
+  reg_lambda,
+  reg_alpha,
   n_jobs,
 ):
   return xgb.XGBClassifier(
@@ -30,6 +34,10 @@ def get_xgb_model(
     scale_pos_weight=scale_pos_weight,
     subsample=subsample,
     random_state=random_state,
+    gamma=gamma,
+    max_delta_step=max_delta_step,
+    reg_lambda=reg_lambda,
+    reg_alpha=reg_alpha,
     n_jobs=n_jobs,
     use_label_encoder=False,
   )
