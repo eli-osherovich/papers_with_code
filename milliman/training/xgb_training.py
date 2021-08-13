@@ -101,6 +101,10 @@ def tune(
       **model_args
     )
 
+    # do not save unused parameters.
+    res.pop('fit_time')
+    res.pop('score_time')
+
     agg_res = {}
     for k, v in res.items():
       agg_res[k + '_mean'] = np.mean(v)
