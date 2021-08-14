@@ -1,3 +1,10 @@
+# Tree model
+############################################
+get_tree_model.depth = 4
+get_tree_model.n_classes = 1
+
+# XGB model
+###########################################
 get_xgb_model.n_estimators = 1_000_000
 get_xgb_model.objective = 'binary:logistic'
 get_xgb_model.random_state = 0

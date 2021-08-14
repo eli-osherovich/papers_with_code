@@ -1,7 +1,10 @@
 import enum
+from absl import flags
 
 from .tree_model import get_tree_model
 from .xgb_model import get_xgb_model
+
+FLAGS = flags.FLAGS
 
 
 @enum.unique
@@ -10,8 +13,11 @@ class MODEL(enum.Enum):
   TREE = 2
 
 
-def get_model(model: MODEL, **kwargs):
+flags.DEFINE_enum_class('model', MODEL.TREE, MODEL, 'Model to train')
+
+
+def get_model(model: MODEL, **model_args):
   if model == MODEL.XGB:
-    return get_xgb_model(**kwargs)
+    return get_xgb_model(**model_args)
   elif model == MODEL.TREE:
-    return get_tree_model(**kwargs)
+    return get_tree_model(**model_args)

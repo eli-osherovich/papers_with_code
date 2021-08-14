@@ -2,7 +2,7 @@ import gin
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
 
-from .. import data, model
+from .. import model
 
 
 def _train_model(
@@ -48,6 +48,7 @@ def train(
   scale_pos_weight=float,
 ):
 
+  m = model.get_model(model.MODEL.TREE)
   X_train, X_val, y_train, y_val = train_test_split(
     X,
     y,
@@ -56,10 +57,8 @@ def train(
     random_state=random_state,
   )
 
-  m = model.get_tree_model()
-
   early_stop = tf.keras.callbacks.EarlyStopping(
-    monitor='val_auc',
+    monitor='val_acc',
     patience=patience,
     mode='max',
     restore_best_weights=not keep_last,
@@ -82,4 +81,4 @@ def train(
     [early_stop],
     verbose=2,
   )
-  m.save('saved_model/tree_model')
+  # m.save('saved_model/tree_model')

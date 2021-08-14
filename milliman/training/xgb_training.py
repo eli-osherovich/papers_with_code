@@ -21,7 +21,7 @@ def _train_model(X_train, y_train, model_, *, eval_set, fit_params: dict):
 def train(
   X, y, *, test_size: float, random_state: int, fit_params: dict, **model_args
 ):
-  m = model.get_xgb_model(**model_args)
+  m = model.get_model(model.MODEL.XGB, **model_args)
   X_train, X_val, y_train, y_val = train_test_split(
     X,
     y,
@@ -42,7 +42,7 @@ def train(
 @gin.configurable
 def train_cv(X, y, *, scoring, cv_params: dict, fit_params: dict, **model_args):
 
-  m = model.get_xgb_model(**model_args)
+  m = model.get_model(model.MODEL.XGB, **model_args)
   cv = RepeatedStratifiedKFold(**cv_params)
   cv_res = cross_validate(
     m, X, y, cv=cv, scoring=scoring, fit_params=fit_params

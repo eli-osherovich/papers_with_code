@@ -1,9 +1,5 @@
-import pathlib
-
 import gin
 import xgboost as xgb
-
-GIN_CONFIG_FILE = 'xgb_model_config.gin'
 
 
 @gin.configurable
@@ -41,6 +37,3 @@ def get_xgb_model(
     n_jobs=n_jobs,
     use_label_encoder=False,
   )
-
-
-gin.parse_config_file(pathlib.Path(__file__).parent.resolve() / GIN_CONFIG_FILE)
