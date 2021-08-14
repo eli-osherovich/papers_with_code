@@ -7,28 +7,39 @@ cv_params = {
   'random_state': 42,
 }
 
-fit_params = {
+xgb_fit_params = {
   'eval_metric': 'error',
   'early_stopping_rounds': 100,
   'verbose': False,
 }
 
+tree_fit_params = {
+  'epochs': 1000,
+  'batch_size': 800,
+  'patience': 100,
+  'verbose': 1,
+  'shuffle': True,
+  'scale_pos_weight': 1.8,
 
-tree_training.train.test_size = 0.2
-tree_training.train.batch_size = 256
-tree_training.train.epochs = 10000
-tree_training.train.keep_last = False
-tree_training.train.patience = 100
-tree_training.train.scale_pos_weight = 2.33
-tree_training.train.shuffle_buf_size = 1000
+}
+
+# Tree model
+#######################################
 tree_training.train.random_state = 42
+tree_training.train.test_size = 0.2
+tree_training.train.fit_params = %tree_fit_params
 
+tree_training.train_cv.cv_params = %cv_params
+tree_training.train_cv.fit_params = %tree_fit_params
+
+# XGB model
+######################################
 xgb_training.train.random_state = 42
 xgb_training.train.test_size = 0.2
-xgb_training.train.fit_params = %fit_params
+xgb_training.train.fit_params = %xgb_fit_params
 
 xgb_training.train_cv.cv_params = %cv_params
-xgb_training.train_cv.fit_params = %fit_params
+xgb_training.train_cv.fit_params = %xgb_fit_params
 xgb_training.train_cv.scoring = ('accuracy', 'roc_auc')
 
 xgb_training.gen_search_space.colsample_bytree_bounds = (0.2, 1)

@@ -1,34 +1,23 @@
 import gin
 import tensorflow as tf
-from sklearn.model_selection import train_test_split
+import numpy as np
+from sklearn.model_selection import train_test_split, RepeatedStratifiedKFold
+from sklearn.preprocessing import StandardScaler
 
 from .. import model
 
 
 def _train_model(
-  X_train, y_train, model_, X_val, y_val, epochs, batch_size, shuffle_buf_size,
-  scale_pos_weight, callbacks, verbose
+  X_train, y_train, model_, *, class_weight, eval_set, callbacks, fit_params
 ):
-  X_mean = X_train.mean(axis=0)
-  X_std = X_train.std(axis=0)
-
-  X_train = (X_train - X_mean) / X_std
-  X_val = (X_val - X_mean) / X_std
-
-  train_ds = tf.data.Dataset.from_tensor_slices(
-    (X_train, y_train)
-  ).shuffle(shuffle_buf_size).batch(batch_size)
-
-  val_ds = tf.data.Dataset.from_tensor_slices((X_val, y_val)).batch(batch_size)
-  class_weight = {0: 1.0, 1: scale_pos_weight}
-
+  X_val, y_val = eval_set
   model_.fit(
-    train_ds,
-    epochs=epochs,
-    validation_data=val_ds,
+    X_train,
+    y_train,
+    validation_data=(X_val, y_val),
     callbacks=callbacks,
     class_weight=class_weight,
-    verbose=verbose
+    **fit_params,
   )
 
   return model_
@@ -36,19 +25,20 @@ def _train_model(
 
 @gin.configurable
 def train(
-  X,
-  y,
-  epochs: int,
-  test_size: float,
-  batch_size: int,
-  patience: int,
-  shuffle_buf_size: int,
-  random_state: int,
-  keep_last: bool,
-  scale_pos_weight=float,
+  X, y, *, test_size: float, random_state: int, fit_params: dict, **model_args
 ):
 
-  m = model.get_model(model.MODEL.TREE)
+  m = model.get_model(model.MODEL.TREE, **model_args)
+  early_stop = tf.keras.callbacks.EarlyStopping(
+    monitor='val_acc',
+    patience=fit_params.pop('patience'),
+    restore_best_weights=True,
+  )
+
+  m.compile(
+    loss=tf.keras.losses.BinaryCrossentropy(from_logits=True), metrics=['acc']
+  )
+
   X_train, X_val, y_train, y_val = train_test_split(
     X,
     y,
@@ -56,29 +46,64 @@ def train(
     test_size=test_size,
     random_state=random_state,
   )
+  scale_pos_weight = fit_params.pop('scale_pos_weight')
+  class_weight = {0: 1.0, 1: scale_pos_weight}
 
-  early_stop = tf.keras.callbacks.EarlyStopping(
-    monitor='val_acc',
-    patience=patience,
-    mode='max',
-    restore_best_weights=not keep_last,
-  )
+  pt = StandardScaler()
+  X_train = pt.fit_transform(X_train)
+  X_val = pt.transform(X_val)
 
-  m.compile(
-    loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
-    metrics=['acc', tf.keras.metrics.AUC(from_logits=True)]
-  )
   m = _train_model(
     X_train,
     y_train,
     m,
-    X_val,
-    y_val,
-    epochs,
-    batch_size,
-    shuffle_buf_size,
-    scale_pos_weight,
-    [early_stop],
-    verbose=2,
+    class_weight=class_weight,
+    eval_set=(X_val, y_val),
+    callbacks=[early_stop],
+    fit_params=fit_params,
   )
-  # m.save('saved_model/tree_model')
+
+
+@gin.configurable
+def train_cv(X, y, *, cv_params: dict, fit_params: dict, **model_args):
+  m = model.get_model(model.MODEL.TREE, **model_args)
+  early_stop = tf.keras.callbacks.EarlyStopping(
+    monitor='val_accuracy',
+    patience=fit_params.pop('patience'),
+    restore_best_weights=True,
+  )
+  m.compile(
+    loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
+    # Accuracy's threshold is set to 0 (instead of 0.5) because our model
+    # returns logits.
+    metrics=[tf.keras.metrics.BinaryAccuracy(name='accuracy', threshold=0)]
+  )
+  scale_pos_weight = fit_params.pop('scale_pos_weight')
+  class_weight = {0: 1.0, 1: scale_pos_weight}
+
+  pt = StandardScaler()
+
+  cv = RepeatedStratifiedKFold(**cv_params)
+  scores = []
+  for train_index, val_index in cv.split(X, y):
+    X_train, X_val = X[train_index], X[val_index]
+    y_train, y_val = y[train_index], y[val_index]
+    X_train = pt.fit_transform(X_train)
+    X_val = pt.transform(X_val)
+    m = _train_model(
+      X_train,
+      y_train,
+      m,
+      class_weight=class_weight,
+      eval_set=(X_val, y_val),
+      callbacks=[early_stop],
+      fit_params=fit_params,
+    )
+    pred = m.predict(X_val, batch_size=200)
+    prob = tf.math.sigmoid(pred)
+    score = np.mean(
+      tf.keras.metrics.binary_accuracy(y_val[:, np.newaxis], prob)
+    )
+    scores.append(score)
+  print(scores)
+  return scores
