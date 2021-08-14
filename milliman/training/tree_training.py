@@ -1,8 +1,10 @@
 import gin
-import tensorflow as tf
 import numpy as np
-from sklearn.model_selection import train_test_split, RepeatedStratifiedKFold
+import ray.tune
+import tensorflow as tf
+from sklearn.model_selection import RepeatedStratifiedKFold, train_test_split
 from sklearn.preprocessing import StandardScaler
+import copy
 
 from .. import model
 
@@ -99,11 +101,47 @@ def train_cv(X, y, *, cv_params: dict, fit_params: dict, **model_args):
       callbacks=[early_stop],
       fit_params=fit_params,
     )
-    pred = m.predict(X_val, batch_size=200)
+    pred = m.predict(X_val)
     prob = tf.math.sigmoid(pred)
     score = np.mean(
       tf.keras.metrics.binary_accuracy(y_val[:, np.newaxis], prob)
     )
     scores.append(score)
-  print(scores)
-  return scores
+  return {'accuracy': scores}
+
+
+@gin.configurable
+def gen_search_space(*, depth_bounds, batch_size_list, scale_pos_weight_bounds):
+  return {
+    'depth': ray.tune.randint(*depth_bounds),
+    'batch_size': ray.tune.choice(batch_size_list),
+    'scale_pos_weight': ray.tune.uniform(*scale_pos_weight_bounds),
+  }
+
+
+@gin.configurable
+def tune(X, y, *, metric, mode, num_samples, search_alg, cv_params, fit_params):
+  config = gen_search_space()
+
+  def trainable(config):
+    model_args = {'depth': config.pop('depth')}
+    trial_fit_params = fit_params | config
+    res = train_cv(
+      X, y, cv_params=cv_params, fit_params=trial_fit_params, **model_args
+    )
+
+    agg_res = {}
+    for k, v in res.items():
+      agg_res[k + '_mean'] = np.mean(v)
+      agg_res[k + '_std'] = np.std(v)
+      agg_res[k + '_min'] = np.min(v)
+      agg_res[k + '_max'] = np.max(v)
+    return agg_res
+
+  return ray.tune.run(
+    trainable,
+    config=config,
+    num_samples=num_samples,
+    search_alg=search_alg(metric=metric, mode=mode),
+    fail_fast=True,
+  )
