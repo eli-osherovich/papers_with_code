@@ -4,7 +4,6 @@ import ray.tune
 import tensorflow as tf
 from sklearn.model_selection import RepeatedStratifiedKFold, train_test_split
 from sklearn.preprocessing import StandardScaler
-import copy
 
 from .. import model
 
@@ -120,7 +119,10 @@ def gen_search_space(*, depth_bounds, batch_size_list, scale_pos_weight_bounds):
 
 
 @gin.configurable
-def tune(X, y, *, metric, mode, num_samples, search_alg, cv_params, fit_params):
+def tune(
+  X, y, *, metric, mode, num_samples, search_alg, num_cpus, cv_params,
+  fit_params
+):
   config = gen_search_space()
 
   def trainable(config):
@@ -138,10 +140,12 @@ def tune(X, y, *, metric, mode, num_samples, search_alg, cv_params, fit_params):
       agg_res[k + '_max'] = np.max(v)
     return agg_res
 
+  ray.init(num_cpus=num_cpus)
+
   return ray.tune.run(
     trainable,
     config=config,
     num_samples=num_samples,
     search_alg=search_alg(metric=metric, mode=mode),
-    fail_fast=True,
+    max_failures=2,
   )
