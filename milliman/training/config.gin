@@ -41,7 +41,7 @@ tree_training.tune.cv_params = %cv_params
 tree_training.tune.fit_params = %tree_fit_params
 
 
-tree_training.gen_search_space.depth_bounds = (6, 15)
+tree_training.gen_search_space.depth_bounds = (6, 12)
 tree_training.gen_search_space.batch_size_list = (64, 128, 256, 512, 1024)
 tree_training.gen_search_space.scale_pos_weight_bounds = (1, 3)
 
