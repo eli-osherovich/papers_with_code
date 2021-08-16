@@ -67,18 +67,7 @@ def train(
 
 @gin.configurable
 def train_cv(X, y, *, cv_params: dict, fit_params: dict, **model_args):
-  m = model.get_model(model.MODEL.TREE, **model_args)
-  early_stop = tf.keras.callbacks.EarlyStopping(
-    monitor='val_accuracy',
-    patience=fit_params.pop('patience'),
-    restore_best_weights=True,
-  )
-  m.compile(
-    loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
-    # Accuracy's threshold is set to 0 (instead of 0.5) because our model
-    # returns logits.
-    metrics=[tf.keras.metrics.BinaryAccuracy(name='accuracy', threshold=0)]
-  )
+  patience = fit_params.pop('patience')
   scale_pos_weight = fit_params.pop('scale_pos_weight')
   class_weight = {0: 1.0, 1: scale_pos_weight}
 
@@ -91,6 +80,20 @@ def train_cv(X, y, *, cv_params: dict, fit_params: dict, **model_args):
     y_train, y_val = y[train_index], y[val_index]
     X_train = pt.fit_transform(X_train)
     X_val = pt.transform(X_val)
+
+    m = model.get_model(model.MODEL.TREE, **model_args)
+    early_stop = tf.keras.callbacks.EarlyStopping(
+      monitor='val_accuracy',
+      patience=patience,
+      restore_best_weights=True,
+    )
+    m.compile(
+      loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
+      # Accuracy's threshold is set to 0 (instead of 0.5) because our model
+      # returns logits.
+      metrics=[tf.keras.metrics.BinaryAccuracy(name='accuracy', threshold=0)]
+    )
+
     m = _train_model(
       X_train,
       y_train,
