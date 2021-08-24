@@ -3,7 +3,7 @@ import xgboost as xgb
 
 
 @gin.configurable
-def get_xgb_model(
+def get_model(
   *,
   n_estimators,
   objective,

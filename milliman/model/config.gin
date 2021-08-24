@@ -1,22 +1,22 @@
 # Tree model
 ############################################
-get_tree_model.depth = 11
-get_tree_model.n_classes = 1
-get_tree_model.leaf_initializer = -0.8472978603872037  # log(3/7)
+tree_model.get_model.depth = 11
+tree_model.get_model.n_classes = 1
+tree_model.get_model.leaf_initializer = -0.8472978603872037  # log(3/7)
 
 # XGB model
 ###########################################
-get_xgb_model.n_estimators = 1_000_000
-get_xgb_model.objective = 'binary:logistic'
-get_xgb_model.random_state = 0
-get_xgb_model.n_jobs = 1
-get_xgb_model.max_depth = 7
-get_xgb_model.learning_rate = 0.009169072849871892
-get_xgb_model.min_child_weight = 1.4473991499902412
-get_xgb_model.subsample = 0.6125
-get_xgb_model.colsample_bytree = 0.2325581395348837
-get_xgb_model.scale_pos_weight = 1.7308371108702183
-get_xgb_model.gamma = 0.7664258804998849
-get_xgb_model.max_delta_step = 1.506879651419624
-get_xgb_model.reg_lambda = 1.8902838994576865
-get_xgb_model.reg_alpha = 0.38696239023521317
+xgb_model.get_model.n_estimators = 1_000_000
+xgb_model.get_model.objective = 'binary:logistic'
+xgb_model.get_model.random_state = 0
+xgb_model.get_model.n_jobs = 1
+xgb_model.get_model.max_depth = 7
+xgb_model.get_model.learning_rate = 0.009169072849871892
+xgb_model.get_model.min_child_weight = 1.4473991499902412
+xgb_model.get_model.subsample = 0.6125
+xgb_model.get_model.colsample_bytree = 0.2325581395348837
+xgb_model.get_model.scale_pos_weight = 1.7308371108702183
+xgb_model.get_model.gamma = 0.7664258804998849
+xgb_model.get_model.max_delta_step = 1.506879651419624
+xgb_model.get_model.reg_lambda = 1.8902838994576865
+xgb_model.get_model.reg_alpha = 0.38696239023521317

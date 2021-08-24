@@ -6,7 +6,7 @@ from ...arxiv_1711_09784 import tree
 
 
 @gin.configurable
-def get_tree_model(
+def get_model(
   depth: int,
   n_classes: int,
   leaf_initializer: Optional[float] = None

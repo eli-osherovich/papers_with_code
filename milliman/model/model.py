@@ -1,8 +1,8 @@
 import enum
+
 from absl import flags
 
-from .tree_model import get_tree_model
-from .xgb_model import get_xgb_model
+from . import tree_model, xgb_model
 
 FLAGS = flags.FLAGS
 
@@ -18,6 +18,6 @@ flags.DEFINE_enum_class('model', MODEL.TREE, MODEL, 'Model to train')
 
 def get_model(model: MODEL, **model_args):
   if model == MODEL.XGB:
-    return get_xgb_model(**model_args)
+    return xgb_model.get_model(**model_args)
   elif model == MODEL.TREE:
-    return get_tree_model(**model_args)
+    return tree_model.get_model(**model_args)
