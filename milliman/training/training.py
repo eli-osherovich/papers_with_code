@@ -1,7 +1,7 @@
 from absl import flags
 
 from .. import data, model
-from . import tree_training, xgb_training
+from . import metatree_training, tree_training, xgb_training
 
 FLAGS = flags.FLAGS
 
@@ -26,6 +26,8 @@ def _get_model_module():
     return tree_training
   elif FLAGS.model == model.MODEL.XGB:
     return xgb_training
+  elif FLAGS.model == model.MODEL.METATREE:
+    return metatree_training
   else:
     raise RuntimeError('Unknown model: %s', FLAGS.model)
 

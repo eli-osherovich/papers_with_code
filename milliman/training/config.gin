@@ -23,6 +23,15 @@ tree_fit_params = {
 
 }
 
+metatree_fit_params = {
+  'epochs': 10000,
+  'batch_size': 128,
+  'patience': 100,
+  'verbose': 1,
+  'shuffle': True,
+  'scale_pos_weight': 2.206325623439506,
+}
+
 # Tree model
 #######################################
 tree_training.train.random_state = 42
@@ -44,6 +53,13 @@ tree_training.tune.fit_params = %tree_fit_params
 tree_training.gen_search_space.depth_bounds = (4, 11)
 tree_training.gen_search_space.batch_size_list = (64, 128, 256, 512)
 tree_training.gen_search_space.scale_pos_weight_bounds = (1, 3)
+
+# MetaTree model
+#######################################
+metatree_training.train.random_state = 42
+metatree_training.train.test_size = 0.2
+metatree_training.train.fit_params = %metatree_fit_params
+
 
 
 # XGB model
