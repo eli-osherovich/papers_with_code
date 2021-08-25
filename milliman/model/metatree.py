@@ -34,12 +34,11 @@ class LeafNode(tf.keras.layers.Layer):
 
 class InnerNode(tf.keras.layers.Layer):
 
-  def __init__(self,
-               model_fn: Callable[[], tf.keras.Model],
-               reg_weight=0.01) -> None:
+  def __init__(self, model_fn: Callable[[], tf.keras.Model],
+               proba_reg_weight: float) -> None:
     super().__init__()
     self.model = model_fn()
-    self.reg_weight = reg_weight
+    self.proba_reg_weight = proba_reg_weight
 
   def call(self, inputs):
     x, emb = inputs
@@ -47,9 +46,11 @@ class InnerNode(tf.keras.layers.Layer):
 
     pR = tf.nn.sigmoid(beta *
                        (tf.math.reduce_sum(w * x, axis=1, keepdims=True) + b))
-    self.add_loss(
-      self.reg_weight *
-      tf.keras.losses.binary_crossentropy(0.5, tf.math.reduce_mean(pR, axis=0)))
+
+    desired_proba = tf.constant(0.5, dtype=pR.dtype, shape=pR.shape)
+    self.add_loss(self.proba_reg_weight * tf.math.reduce_mean(
+      tf.keras.losses.binary_crossentropy(desired_proba, pR)))
+
     return pR * self.right(inputs) + (1 - pR) * self.left(inputs)
 
 
@@ -64,7 +65,7 @@ def gen_input_encoder(
     tf.keras.layers.Dense(emb_dim, activation='relu'),
     tf.keras.layers.Dense(emb_dim, activation='relu'),
     tf.keras.layers.Dense(emb_dim, activation='relu'),
-  ],)
+  ])
 
 
 def gen_inner_model(*,
@@ -91,18 +92,27 @@ def gen_leaf_model(emb_dim: int) -> tf.keras.Model:
   ])
 
 
-def build_tree(
-  *,
-  depth: int,
-  inner_model_fn: Callable[[], tf.keras.Model],
-  leaf_model_fn: Callable[[], tf.keras.Model],
-):
+def build_tree(*,
+               depth: int,
+               inner_model_fn: Callable[[], tf.keras.Model],
+               leaf_model_fn: Callable[[], tf.keras.Model],
+               proba_reg_weight: float = 0.1,
+               proba_reg_reduction_factor: float = 2.0):
   if depth == 1:
     return LeafNode(leaf_model_fn)
 
-  root = InnerNode(inner_model_fn)
+  root = InnerNode(inner_model_fn, proba_reg_weight)
+
   root.left = build_tree(
-    depth=depth - 1, inner_model_fn=inner_model_fn, leaf_model_fn=leaf_model_fn)
+    depth=depth - 1,
+    inner_model_fn=inner_model_fn,
+    leaf_model_fn=leaf_model_fn,
+    proba_reg_weight=proba_reg_weight / proba_reg_reduction_factor)
+
   root.right = build_tree(
-    depth=depth - 1, inner_model_fn=inner_model_fn, leaf_model_fn=leaf_model_fn)
+    depth=depth - 1,
+    inner_model_fn=inner_model_fn,
+    leaf_model_fn=leaf_model_fn,
+    proba_reg_weight=proba_reg_weight / proba_reg_reduction_factor)
+
   return root
