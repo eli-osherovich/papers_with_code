@@ -8,13 +8,12 @@ from sklearn.preprocessing import StandardScaler
 from .. import model
 
 
-def _train_model(X_train, y_train, model_, *, class_weight, eval_set, callbacks,
-                 fit_params):
-  X_val, y_val = eval_set
+def _train_model(
+  train_ds, model_, *, class_weight, eval_ds, callbacks, fit_params
+):
   model_.fit(
-    X_train,
-    y_train,
-    validation_data=(X_val, y_val),
+    train_ds,
+    validation_data=eval_ds,
     callbacks=callbacks,
     class_weight=class_weight,
     **fit_params,
@@ -53,12 +52,18 @@ def train(X, y, *, test_size: float, random_state: int, fit_params: dict,
   X_train = pt.fit_transform(X_train)
   X_val = pt.transform(X_val)
 
+  train_ds = tf.data.Dataset.from_tensor_slices((X_train, y_train)
+                                               ).shuffle(1000).batch(
+                                                 128, drop_remainder=True
+                                               )
+  eval_ds = tf.data.Dataset.from_tensor_slices((X_val, y_val)).batch(
+    len(X_val), drop_remainder=True
+  )
   m = _train_model(
-    X_train,
-    y_train,
+    train_ds,
     m,
     class_weight=class_weight,
-    eval_set=(X_val, y_val),
+    eval_ds=eval_ds,
     callbacks=[early_stop],
     fit_params=fit_params,
   )
