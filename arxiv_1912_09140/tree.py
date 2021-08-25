@@ -46,19 +46,15 @@ class InnerNode(tf.keras.layers.Layer):
     w, b, beta = self.model((r, rI))
 
     pR = tf.nn.sigmoid(beta * (tf.einsum('bd, bnd -> bn', w, x) + b))
-    self.add_loss(
-      self.reg_weight * tf.math.reduce_mean(
-        tf.losses.binary_crossentropy(tf.constant(0.5, shape=pR.shape), pR)
-      )
-    )
+    self.add_loss(self.reg_weight * tf.math.reduce_mean(
+      tf.losses.binary_crossentropy(tf.constant(0.5, shape=pR.shape), pR)))
     maskR = tf.math.logical_and(mask, pR >= 0.5)
     maskL = tf.math.logical_and(mask, pR < 0.5)
 
     # tf.print(tf.math.reduce_sum(tf.cast(maskR, tf.int64)))
     # tf.print(tf.math.reduce_sum(tf.cast(maskL, tf.int64)))
-    return (
-      pR * self.right(inputs, maskR) + (1 - pR) * self.left(inputs, maskL)
-    )
+    return (pR * self.right(inputs, maskR) +
+            (1 - pR) * self.left(inputs, maskL))
 
 
 @tf.function
@@ -115,10 +111,8 @@ def gen_split_model(input_dim, emb_dim, l1=0.01):
   w = tf.keras.layers.Dense(
     input_dim,
     activity_regularizer=tf.keras.regularizers.L1(l1),
-    activation='softmax'
-  )(
-    x
-  )
+    activation='softmax')(
+      x)
   b = tf.keras.layers.Dense(1)(x)
   beta = tf.keras.layers.Dense(1)(x)
   return tf.keras.Model(inputs=[r, rI], outputs=[w, b, beta])

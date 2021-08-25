@@ -12,5 +12,4 @@ def get_model(
   leaf_initializer: Optional[float] = None
 ) -> Union[tree.LeafNode, tree.InnerNode]:
   return tree.TreeModel(
-    n_classes=n_classes, depth=depth, leaf_initializer=leaf_initializer
-  )
+    n_classes=n_classes, depth=depth, leaf_initializer=leaf_initializer)

@@ -3,9 +3,8 @@ import numpy as np
 import ray.tune
 import ray.tune.suggest.optuna
 
-from sklearn.model_selection import (
-  RepeatedStratifiedKFold, cross_validate, train_test_split
-)
+from sklearn.model_selection import (RepeatedStratifiedKFold, cross_validate,
+                                     train_test_split)
 
 from ...common import utils
 from .. import model
@@ -18,9 +17,8 @@ def _train_model(X_train, y_train, model_, *, eval_set, fit_params: dict):
 
 
 @gin.configurable
-def train(
-  X, y, *, test_size: float, random_state: int, fit_params: dict, **model_args
-):
+def train(X, y, *, test_size: float, random_state: int, fit_params: dict,
+          **model_args):
   m = model.get_model(model.MODEL.XGB, **model_args)
   X_train, X_val, y_train, y_val = train_test_split(
     X,
@@ -34,8 +32,7 @@ def train(
     y_train,
     m,
     eval_set=[(X_train, y_train), (X_val, y_val)],
-    fit_params=fit_params
-  )
+    fit_params=fit_params)
   return m.best_score
 
 
@@ -45,24 +42,21 @@ def train_cv(X, y, *, scoring, cv_params: dict, fit_params: dict, **model_args):
   m = model.get_model(model.MODEL.XGB, **model_args)
   cv = RepeatedStratifiedKFold(**cv_params)
   cv_res = cross_validate(
-    m, X, y, cv=cv, scoring=scoring, fit_params=fit_params
-  )
+    m, X, y, cv=cv, scoring=scoring, fit_params=fit_params)
   return cv_res
 
 
 @gin.configurable
-def gen_search_space(
-  *, n_samples, n_features, colsample_bytree_bounds, learning_rate_bounds,
-  max_depth_bounds, min_child_weight_bounds, scale_pos_weight_bounds,
-  subsample_bounds, gamma_bounds, max_delta_step_bounds, reg_lambda_bounds,
-  reg_alpha_bounds
-):
+def gen_search_space(*, n_samples, n_features, colsample_bytree_bounds,
+                     learning_rate_bounds, max_depth_bounds,
+                     min_child_weight_bounds, scale_pos_weight_bounds,
+                     subsample_bounds, gamma_bounds, max_delta_step_bounds,
+                     reg_lambda_bounds, reg_alpha_bounds):
   q_features = 1 / n_features
   q_samples = 1 / n_samples
 
-  colsample_bytree_bounds = utils.make_divisible(
-    q_features, colsample_bytree_bounds
-  )
+  colsample_bytree_bounds = utils.make_divisible(q_features,
+                                                 colsample_bytree_bounds)
 
   subsample_bounds = utils.make_divisible(q_samples, subsample_bounds)
 
@@ -81,10 +75,8 @@ def gen_search_space(
 
 
 @gin.configurable
-def tune(
-  X, y, *, metric, mode, num_samples, search_alg, scoring: str, cv_params: dict,
-  fit_params: dict
-):
+def tune(X, y, *, metric, mode, num_samples, search_alg, scoring: str,
+         cv_params: dict, fit_params: dict):
 
   n_splits = cv_params['n_splits']
   n_samples, n_features = X.shape
@@ -98,8 +90,7 @@ def tune(
       scoring=scoring,
       cv_params=cv_params,
       fit_params=fit_params,
-      **model_args
-    )
+      **model_args)
 
     # do not save unused parameters.
     res.pop('fit_time')

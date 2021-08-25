@@ -21,9 +21,8 @@ flags.DEFINE_integer(
 
 
 def get_transforms(x_dim: int, seed: Optional[int] = None) -> tf.Tensor:
-  return tf.random.normal(
-    (FLAGS.n_transforms, FLAGS.transform_dim, x_dim), seed=seed
-  )
+  return tf.random.normal((FLAGS.n_transforms, FLAGS.transform_dim, x_dim),
+                          seed=seed)
 
 
 @tf.function
@@ -37,8 +36,7 @@ def apply_transforms(trans: tf.Tensor,
   trans_dim = trans.shape[1]
 
   batch_transformed = tf.einsum('tdn, bn -> tbd', trans, batch)
-  batch_transformed = tf.reshape(
-    batch_transformed, [batch_size * n_trans, trans_dim]
-  )
+  batch_transformed = tf.reshape(batch_transformed,
+                                 [batch_size * n_trans, trans_dim])
   labels = tf.repeat(tf.range(n_trans), batch_size)
   return batch_transformed, labels

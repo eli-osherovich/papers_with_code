@@ -21,15 +21,13 @@ FLAGS = flags.FLAGS
 
 flags.DEFINE_string('dataset', 'mnist', 'Dataset to load')
 flags.DEFINE_integer(
-  'depth', 9, 'Tree depth (including root and leaves)', lower_bound=2
-)
+  'depth', 9, 'Tree depth (including root and leaves)', lower_bound=2)
 flags.DEFINE_integer('epochs', 1000, 'Number of epochs', lower_bound=0)
 flags.DEFINE_integer('batch_size', 1024, 'Batch size', lower_bound=1)
 flags.DEFINE_integer('shuffle_buffer', 60000, 'Shuffle buffer size')
 flags.DEFINE_integer('patience', 10, 'Early stopping patience')
-flags.DEFINE_bool(
-  'keep_last', False, 'Keep last model (default is to keep the best model)'
-)
+flags.DEFINE_bool('keep_last', False,
+                  'Keep last model (default is to keep the best model)')
 
 
 def main(argv):
@@ -60,19 +58,16 @@ def main(argv):
   early_stop = tf.keras.callbacks.EarlyStopping(
     monitor='val_acc',
     patience=FLAGS.patience,
-    restore_best_weights=not FLAGS.keep_last
-  )
+    restore_best_weights=not FLAGS.keep_last)
 
   model.compile(
     loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-    metrics=['acc']
-  )
+    metrics=['acc'])
   model.fit(
     train_ds,
     epochs=FLAGS.epochs,
     validation_data=val_ds,
-    callbacks=[early_stop]
-  )
+    callbacks=[early_stop])
   model.save('model')
 
 

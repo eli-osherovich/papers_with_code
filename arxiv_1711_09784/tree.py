@@ -5,18 +5,16 @@ import tensorflow as tf
 
 class TreeModel(tf.keras.Model):
 
-  def __init__(
-    self, n_classes: int, depth: int, leaf_initializer: Optional[float] = None
-  ):
+  def __init__(self,
+               n_classes: int,
+               depth: int,
+               leaf_initializer: Optional[float] = None):
     super().__init__()
-    self.model = tf.keras.Sequential(
-      [
-        tf.keras.layers.Flatten(),
-        build_tree(
-          n_classes=n_classes, depth=depth, leaf_initializer=leaf_initializer
-        ),
-      ]
-    )
+    self.model = tf.keras.Sequential([
+      tf.keras.layers.Flatten(),
+      build_tree(
+        n_classes=n_classes, depth=depth, leaf_initializer=leaf_initializer),
+    ])
 
   def call(self, inputs: tf.Tensor):
     return self.model(inputs)
@@ -30,8 +28,7 @@ class LeafNode(tf.keras.layers.Layer):
       init_value = tf.keras.initializers.Constant(init_value)
 
     self.logits = self.add_weight(
-      name='logits', shape=(dim,), trainable=True, initializer=init_value
-    )
+      name='logits', shape=(dim,), trainable=True, initializer=init_value)
 
   def call(self, _inputs: tf.Tensor) -> tf.Variable:
     return self.logits
@@ -49,11 +46,10 @@ class InnerNode(tf.keras.layers.Layer):
 
 
 def build_tree(
-  *,
-  n_classes: int,
-  depth: int,
-  leaf_initializer: Optional[float] = None
-) -> Union[LeafNode, InnerNode]:
+    *,
+    n_classes: int,
+    depth: int,
+    leaf_initializer: Optional[float] = None) -> Union[LeafNode, InnerNode]:
   if depth == 1:
     return LeafNode(dim=n_classes, init_value=leaf_initializer)
 

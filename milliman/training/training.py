@@ -5,9 +5,8 @@ from . import metatree_training, tree_training, xgb_training
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_enum(
-  'action', 'train', ['train', 'train_cv', 'tune'], 'Action to perform'
-)
+flags.DEFINE_enum('action', 'train', ['train', 'train_cv', 'tune'],
+                  'Action to perform')
 
 
 def _get_action():

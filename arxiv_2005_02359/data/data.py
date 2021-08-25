@@ -30,8 +30,7 @@ flags.DEFINE_integer(
 )
 
 flags.DEFINE_integer(
-  'shuffle_buffer', 1024, 'Shuffle buffer size.', lower_bound=1
-)
+  'shuffle_buffer', 1024, 'Shuffle buffer size.', lower_bound=1)
 
 flags.DEFINE_integer('batch_size', 128, 'Batch size.', lower_bound=1)
 flags.DEFINE_string('cache', '', 'Cache file for datasets.')
@@ -65,9 +64,8 @@ def split_normal_anomalous(ds, cache: bool = False):
 
 def get_datasets():
 
-  train, test = ds_common.load_dataset(
-    FLAGS.dataset, FLAGS.train_name, FLAGS.test_name
-  )
+  train, test = ds_common.load_dataset(FLAGS.dataset, FLAGS.train_name,
+                                       FLAGS.test_name)
 
   train_normal, train_anomalous = split_normal_anomalous(train)
   test_normal, test_anomalous = split_normal_anomalous(test)
