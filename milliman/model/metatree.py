@@ -114,7 +114,7 @@ def gen_leaf_model(emb_dim: int) -> tf.keras.Model:
   return tf.keras.Sequential([
     tf.keras.layers.InputLayer(input_shape=(emb_dim,)),
     tf.keras.layers.Dense(emb_dim, activation='relu'),
-    tf.keras.layers.Dense(1),
+    tf.keras.layers.Dense(1, activation='sigmoid'),
   ])
 
 
