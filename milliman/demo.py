@@ -22,8 +22,8 @@ FLAGS = flags.FLAGS
 
 def main(argv):
   del argv  # unused parameter
-  model = training.train()
-  del model  # unused
+  res = training.train()
+  print(res)
 
 
 if __name__ == '__main__':
