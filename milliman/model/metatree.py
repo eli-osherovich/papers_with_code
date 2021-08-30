@@ -22,25 +22,30 @@ class TreeModel(tf.keras.Model):
 
 class LeafNode(tf.keras.layers.Layer):
 
-  def __init__(self, model_fn: Callable[[], tf.keras.Model]):
+  def __init__(self, model_fn: Callable[[], tf.keras.Model], id_: int = 0):
     super().__init__()
+    self.id = id_
     self.model = model_fn()
 
   def call(self, inputs):
     x, emb = inputs
     del x  # unused
-    return self.model(emb)
+    self.value = self.model(emb)
+    return self.value
 
 
 class InnerNode(tf.keras.layers.Layer):
 
-  def __init__(self, model_fn: Callable[[], tf.keras.Model],
-               proba_reg_weight: float) -> None:
+  def __init__(self,
+               model_fn: Callable[[], tf.keras.Model],
+               proba_reg_weight: float,
+               id_: int = 0) -> None:
     super().__init__()
     self.model = model_fn()
     self.proba_reg_weight = proba_reg_weight
+    self.id = id_
 
-  def call(self, inputs):
+  def call(self, inputs, training=None):
     x, emb = inputs
     w, b, beta = self.model(emb)
 
@@ -50,6 +55,27 @@ class InnerNode(tf.keras.layers.Layer):
     desired_proba = tf.constant(0.5, dtype=pR.dtype, shape=pR.shape)
     self.add_loss(self.proba_reg_weight * tf.math.reduce_mean(
       tf.keras.losses.binary_crossentropy(desired_proba, pR)))
+
+    # During inference the behavior is different in two aspects:
+    # 1. The system uses hard decision trees.
+    # 2. Decisions are based on a single feature.
+    if not training:
+      logits = beta * (w * x + b)
+
+      # Split by one feature only: the one that results in the largest logit.
+      self.split_feature_idx = tf.math.argmax(logits, axis=1)
+      self.threshold = -tf.squeeze(b) / tf.gather(
+        w, self.split_feature_idx, batch_dims=1)
+
+      # Depending on the sing of beta, the inequality may be either:
+      # 1. geq
+      # 2. less
+      self.geq = tf.squeeze(beta >= 0)
+
+      pR = tf.nn.sigmoid(tf.math.reduce_max(logits, axis=1, keepdims=True))
+
+      # Hard decisions tree.
+      pR = tf.where(pR >= 0.5, 1.0, 0.0)
 
     return pR * self.right(inputs) + (1 - pR) * self.left(inputs)
 
@@ -97,22 +123,25 @@ def build_tree(*,
                inner_model_fn: Callable[[], tf.keras.Model],
                leaf_model_fn: Callable[[], tf.keras.Model],
                proba_reg_weight: float = 0.1,
-               proba_reg_reduction_factor: float = 2.0):
+               proba_reg_reduction_factor: float = 2.0,
+               root_id: int = 0):
   if depth == 1:
-    return LeafNode(leaf_model_fn)
+    return LeafNode(leaf_model_fn, root_id)
 
-  root = InnerNode(inner_model_fn, proba_reg_weight)
+  root = InnerNode(inner_model_fn, proba_reg_weight, root_id)
 
   root.left = build_tree(
     depth=depth - 1,
     inner_model_fn=inner_model_fn,
     leaf_model_fn=leaf_model_fn,
-    proba_reg_weight=proba_reg_weight / proba_reg_reduction_factor)
+    proba_reg_weight=proba_reg_weight / proba_reg_reduction_factor,
+    root_id=2 * root_id + 1)
 
   root.right = build_tree(
     depth=depth - 1,
     inner_model_fn=inner_model_fn,
     leaf_model_fn=leaf_model_fn,
-    proba_reg_weight=proba_reg_weight / proba_reg_reduction_factor)
+    proba_reg_weight=proba_reg_weight / proba_reg_reduction_factor,
+    root_id=2 * root_id + 2)
 
   return root
