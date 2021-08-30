@@ -23,19 +23,7 @@ def _train_model(train_ds, model_, *, class_weight, eval_ds, callbacks,
 
 @gin.configurable
 def train(X, y, *, test_size: float, random_state: int, fit_params: dict,
-          **model_args):
-
-  m = model.get_model(model.MODEL.METATREE, **model_args)
-  early_stop = tf.keras.callbacks.EarlyStopping(
-    monitor='val_acc',
-    patience=fit_params.pop('patience'),
-    restore_best_weights=True,
-  )
-
-  m.compile(
-    loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
-    metrics=['acc'],
-    optimizer=tf.keras.optimizers.Adam(learning_rate=1e-5))
+          batch_size, **model_args):
 
   X_train, X_val, y_train, y_val = train_test_split(
     X,
@@ -44,18 +32,20 @@ def train(X, y, *, test_size: float, random_state: int, fit_params: dict,
     test_size=test_size,
     random_state=random_state,
   )
+  train_ds, eval_ds = _prepare_datasets(X_train, y_train, X_val, y_val,
+                                        batch_size)
+
+  early_stop = tf.keras.callbacks.EarlyStopping(
+    monitor='val_acc',
+    patience=fit_params.pop('patience'),
+    restore_best_weights=True,
+  )
+
   scale_pos_weight = fit_params.pop('scale_pos_weight')
   class_weight = {0: 1.0, 1: scale_pos_weight}
 
-  pt = StandardScaler()
-  X_train = pt.fit_transform(X_train)
-  X_val = pt.transform(X_val)
+  m = model.get_model(model.MODEL.METATREE, **model_args)
 
-  train_ds = tf.data.Dataset.from_tensor_slices(
-    (X_train, y_train)).shuffle(1000).batch(
-      128, drop_remainder=True)
-  eval_ds = tf.data.Dataset.from_tensor_slices((X_val, y_val)).batch(
-    len(X_val), drop_remainder=True)
   m = _train_model(
     train_ds,
     m,
@@ -64,49 +54,46 @@ def train(X, y, *, test_size: float, random_state: int, fit_params: dict,
     callbacks=[early_stop],
     fit_params=fit_params,
   )
+  pred = m.predict(eval_ds)
+  score = np.mean(
+    tf.keras.metrics.binary_accuracy(y_val[..., np.newaxis], pred))
+  return {'accuracy': score}
 
 
 @gin.configurable
-def train_cv(X, y, *, cv_params: dict, fit_params: dict, **model_args):
-  patience = fit_params.pop('patience')
+def train_cv(X, y, *, cv_params: dict, fit_params: dict, batch_size,
+             **model_args):
+  early_stop = tf.keras.callbacks.EarlyStopping(
+    monitor='val_acc',
+    patience=fit_params.pop('patience'),
+    restore_best_weights=True,
+  )
+
   scale_pos_weight = fit_params.pop('scale_pos_weight')
   class_weight = {0: 1.0, 1: scale_pos_weight}
-
-  pt = StandardScaler()
 
   cv = RepeatedStratifiedKFold(**cv_params)
   scores = []
   for train_index, val_index in cv.split(X, y):
     X_train, X_val = X[train_index], X[val_index]
     y_train, y_val = y[train_index], y[val_index]
-    X_train = pt.fit_transform(X_train)
-    X_val = pt.transform(X_val)
+
+    train_ds, eval_ds = _prepare_datasets(X_train, y_train, X_val, y_val,
+                                          batch_size)
 
     m = model.get_model(model.MODEL.METATREE, **model_args)
-    early_stop = tf.keras.callbacks.EarlyStopping(
-      monitor='val_accuracy',
-      patience=patience,
-      restore_best_weights=True,
-    )
-    m.compile(
-      loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
-      # Accuracy's threshold is set to 0 (instead of 0.5) because our model
-      # returns logits.
-      metrics=[tf.keras.metrics.BinaryAccuracy(name='accuracy', threshold=0)])
 
     m = _train_model(
-      X_train,
-      y_train,
+      train_ds,
       m,
       class_weight=class_weight,
-      eval_set=(X_val, y_val),
+      eval_ds=eval_ds,
       callbacks=[early_stop],
       fit_params=fit_params,
     )
-    pred = m.predict(X_val)
-    prob = tf.math.sigmoid(pred)
+    pred = m.predict(eval_ds)
     score = np.mean(
-      tf.keras.metrics.binary_accuracy(y_val[:, np.newaxis], prob))
+      tf.keras.metrics.binary_accuracy(y_val[..., np.newaxis], pred))
     scores.append(score)
   return {'accuracy': scores}
 
@@ -148,3 +135,19 @@ def tune(X, y, *, metric, mode, num_samples, search_alg, num_cpus, cv_params,
     search_alg=search_alg(metric=metric, mode=mode),
     max_failures=2,
   )
+
+
+def _prepare_datasets(X_train, y_train, X_val, y_val, batch_size):
+  pt = StandardScaler()
+  pt.fit(X_train)
+
+  X_train = pt.transform(X_train)
+  X_val = pt.transform(X_val)
+
+  train_ds = tf.data.Dataset.from_tensor_slices(
+    (X_train, y_train)).shuffle(1000).batch(
+      batch_size, drop_remainder=True)
+  eval_ds = tf.data.Dataset.from_tensor_slices((X_val, y_val)).batch(
+    len(X_val), drop_remainder=True)
+
+  return train_ds, eval_ds
