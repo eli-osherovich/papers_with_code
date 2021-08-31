@@ -30,8 +30,9 @@ class LeafNode(tf.keras.layers.Layer):
     self.logits = self.add_weight(
       name='logits', shape=(dim,), trainable=True, initializer=init_value)
 
-  def call(self, _inputs: tf.Tensor) -> tf.Variable:
-    return self.logits
+  def call(self, inputs: tf.Tensor) -> tf.Variable:
+    del inputs  # not used
+    return tf.nn.softmax(self.logits)
 
 
 class InnerNode(tf.keras.layers.Layer):
