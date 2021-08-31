@@ -15,6 +15,7 @@ import tensorflow as tf
 import tensorflow_datasets as tfds
 from absl import app, flags
 
+from ..common import utils
 from . import tree
 
 FLAGS = flags.FLAGS
@@ -71,4 +72,5 @@ def main(argv):
 
 
 if __name__ == '__main__':
+  utils.setup_omp()
   app.run(main)

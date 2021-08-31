@@ -8,9 +8,7 @@ would make them even better, e.g., one can easily get validation accuracy of 97%
 
 Another notable difference is how one measures trees' depth. This implementation's *n* corresponds
 to *n-1* in the papers. Namely, a tree with a root and two leaves has depth 1 in the paper, whereas
-here we considere it to be 2.
-
-**Note**: For some reason, `tf-eigen` is several times faster then `tf-mkl` on this problem.
+here we consider it to be 2.
 
 
 Simple demo:
