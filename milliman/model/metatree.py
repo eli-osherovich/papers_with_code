@@ -16,8 +16,9 @@ class TreeModel(tf.keras.Model):
       leaf_model_fn=functools.partial(gen_leaf_model, emb_dim=emb_dim))
 
   def call(self, x):
+    mask = tf.ones(shape=(x.shape[0], 1), dtype=tf.bool)
     emb = self.encoder(x)
-    return self.tree((x, emb))
+    return self.tree((x, emb), mask=mask)
 
 
 class LeafNode(tf.keras.layers.Layer):
@@ -27,7 +28,7 @@ class LeafNode(tf.keras.layers.Layer):
     self.id = id_
     self.model = model_fn()
 
-  def call(self, inputs):
+  def call(self, inputs, *, mask=None):
     x, emb = inputs
     del x  # unused
     self.value = self.model(emb)
@@ -45,7 +46,7 @@ class InnerNode(tf.keras.layers.Layer):
     self.proba_reg_weight = proba_reg_weight
     self.id = id_
 
-  def call(self, inputs, training=None):
+  def call(self, inputs, *, training=None, mask=None):
     x, emb = inputs
     w, b, beta = self.model(emb)
 
@@ -77,7 +78,10 @@ class InnerNode(tf.keras.layers.Layer):
       # Hard decisions tree.
       pR = tf.where(pR >= 0.5, 1.0, 0.0)
 
-    return pR * self.right(inputs) + (1 - pR) * self.left(inputs)
+    maskR = tf.math.logical_and(mask, pR >= 0.5)
+    maskL = tf.math.logical_and(mask, pR < 0.5)
+    return ((1 - pR) * self.left(inputs, mask=maskL) +
+            pR * self.right(inputs, mask=maskR))
 
 
 def gen_input_encoder(
