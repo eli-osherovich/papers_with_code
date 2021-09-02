@@ -80,8 +80,10 @@ class InnerNode(tf.keras.layers.Layer):
 
     maskR = tf.math.logical_and(mask, pR >= 0.5)
     maskL = tf.math.logical_and(mask, pR < 0.5)
-    return ((1 - pR) * self.left(inputs, mask=maskL) +
-            pR * self.right(inputs, mask=maskR))
+    embR = tf.cast(maskR, dtype=emb.dtype) * emb
+    embL = tf.cast(maskL, dtype=emb.dtype) * emb
+    return ((1 - pR) * self.left((x, embL), mask=maskL) + pR * self.right(
+      (x, embR), mask=maskR))
 
 
 def gen_input_encoder(
@@ -126,7 +128,7 @@ def build_tree(*,
                depth: int,
                inner_model_fn: Callable[[], tf.keras.Model],
                leaf_model_fn: Callable[[], tf.keras.Model],
-               proba_reg_weight: float = 0.1,
+               proba_reg_weight: float = 20.0,
                proba_reg_reduction_factor: float = 2.0,
                root_id: int = 0):
   if depth == 1:
