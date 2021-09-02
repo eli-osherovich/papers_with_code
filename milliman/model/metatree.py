@@ -53,9 +53,9 @@ class InnerNode(tf.keras.layers.Layer):
     pR = tf.nn.sigmoid(beta *
                        (tf.math.reduce_sum(w * x, axis=1, keepdims=True) + b))
 
-    desired_proba = tf.constant(0.5, dtype=pR.dtype, shape=pR.shape)
-    self.add_loss(self.proba_reg_weight * tf.math.reduce_mean(
-      tf.keras.losses.binary_crossentropy(desired_proba, pR)))
+    self.add_loss(
+      self.proba_reg_weight *
+      tf.keras.losses.binary_crossentropy([0.5], tf.math.reduce_mean(pR)))
 
     # During inference the behavior is different in two aspects:
     # 1. The system uses hard decision trees.
@@ -69,19 +69,25 @@ class InnerNode(tf.keras.layers.Layer):
         w, self.split_feature_idx, batch_dims=1)
 
       # Depending on the sing of beta, the inequality may be either:
-      # 1. geq
-      # 2. less
+      # 1. geq (>=)
+      # 2. leq (<=)
       self.geq = tf.squeeze(beta >= 0)
 
       pR = tf.nn.sigmoid(tf.math.reduce_max(logits, axis=1, keepdims=True))
 
-      # Hard decisions tree.
+      # Hard decision tree.
       pR = tf.where(pR >= 0.5, 1.0, 0.0)
 
     maskR = tf.math.logical_and(mask, pR >= 0.5)
     maskL = tf.math.logical_and(mask, pR < 0.5)
     embR = tf.cast(maskR, dtype=emb.dtype) * emb
     embL = tf.cast(maskL, dtype=emb.dtype) * emb
+    # tf.print(
+    #   self.id,
+    #   tf.math.count_nonzero(mask),
+    #   tf.math.count_nonzero(maskL),
+    #   tf.math.count_nonzero(maskR),
+    # )
     return ((1 - pR) * self.left((x, embL), mask=maskL) + pR * self.right(
       (x, embR), mask=maskR))
 
@@ -128,8 +134,8 @@ def build_tree(*,
                depth: int,
                inner_model_fn: Callable[[], tf.keras.Model],
                leaf_model_fn: Callable[[], tf.keras.Model],
-               proba_reg_weight: float = 20.0,
-               proba_reg_reduction_factor: float = 2.0,
+               proba_reg_weight: float = 0.5,
+               proba_reg_reduction_factor: float = 1.0,
                root_id: int = 0):
   if depth == 1:
     return LeafNode(leaf_model_fn, root_id)
