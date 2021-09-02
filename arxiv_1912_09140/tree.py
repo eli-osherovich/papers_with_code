@@ -92,8 +92,8 @@ def gen_value_encoder(emb_dim):
 
 def gen_input_encoder(input_dim, emb_dim):
   # This is h(x, y) in the paper.
-  x = tf.keras.Input(shape=(None, input_dim))
-  y = tf.keras.Input(shape=(None, 1))
+  x = tf.keras.Input(shape=(input_dim,))
+  y = tf.keras.Input(shape=(1,))
   h = tf.keras.layers.concatenate((x, y))
   h = tf.keras.layers.Dense(emb_dim, activation='relu')(h)
   h = tf.keras.layers.Dense(emb_dim, activation='relu')(h)
