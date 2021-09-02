@@ -54,10 +54,7 @@ def train(X, y, *, test_size: float, random_state: int, fit_params: dict,
     callbacks=[early_stop],
     fit_params=fit_params,
   )
-  pred = m.predict(eval_ds)
-  score = np.mean(
-    tf.keras.metrics.binary_accuracy(y_val[..., np.newaxis], pred))
-  return {'accuracy': score}
+  return m.evaluate(eval_ds, return_dict=True)
 
 
 @gin.configurable
@@ -73,7 +70,7 @@ def train_cv(X, y, *, cv_params: dict, fit_params: dict, batch_size,
   class_weight = {0: 1.0, 1: scale_pos_weight}
 
   cv = RepeatedStratifiedKFold(**cv_params)
-  scores = []
+  results = []
   for train_index, val_index in cv.split(X, y):
     X_train, X_val = X[train_index], X[val_index]
     y_train, y_val = y[train_index], y[val_index]
@@ -91,11 +88,8 @@ def train_cv(X, y, *, cv_params: dict, fit_params: dict, batch_size,
       callbacks=[early_stop],
       fit_params=fit_params,
     )
-    pred = m.predict(eval_ds)
-    score = np.mean(
-      tf.keras.metrics.binary_accuracy(y_val[..., np.newaxis], pred))
-    scores.append(score)
-  return {'accuracy': scores}
+    results.append(m.evaluate(eval_ds, return_dict=True))
+  return tf.nest.map_structure(lambda *x: x, *results)
 
 
 @gin.configurable
