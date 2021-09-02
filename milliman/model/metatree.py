@@ -64,7 +64,7 @@ class InnerNode(tf.keras.layers.Layer):
       logits = beta * (w * x + b)
 
       # Split by one feature only: the one that results in the largest logit.
-      self.split_feature_idx = tf.math.argmax(logits, axis=1)
+      self.split_feature_idx = tf.math.argmax(w, axis=1)
       self.threshold = -tf.squeeze(b) / tf.gather(
         w, self.split_feature_idx, batch_dims=1)
 
@@ -73,21 +73,29 @@ class InnerNode(tf.keras.layers.Layer):
       # 2. leq (<=)
       self.geq = tf.squeeze(beta >= 0)
 
-      pR = tf.nn.sigmoid(tf.math.reduce_max(logits, axis=1, keepdims=True))
+      pR = tf.expand_dims(
+        tf.nn.sigmoid(tf.gather(logits, self.split_feature_idx, batch_dims=1)),
+        -1)
 
       # Hard decision tree.
       pR = tf.where(pR >= 0.5, 1.0, 0.0)
+      self.x = tf.gather(x, self.split_feature_idx, batch_dims=1)
+      self.w = tf.gather(w, self.split_feature_idx, batch_dims=1)
+      self.ww = w
+      self.beta = tf.squeeze(beta)
+      self.b = tf.squeeze(b)
+      self.pR = tf.squeeze(pR)
 
     maskR = tf.math.logical_and(mask, pR >= 0.5)
     maskL = tf.math.logical_and(mask, pR < 0.5)
     embR = tf.cast(maskR, dtype=emb.dtype) * emb
     embL = tf.cast(maskL, dtype=emb.dtype) * emb
-    # tf.print(
-    #   self.id,
-    #   tf.math.count_nonzero(mask),
-    #   tf.math.count_nonzero(maskL),
-    #   tf.math.count_nonzero(maskR),
-    # )
+    tf.print(
+      self.id,
+      tf.math.count_nonzero(mask),
+      tf.math.count_nonzero(maskL),
+      tf.math.count_nonzero(maskR),
+    )
     return ((1 - pR) * self.left((x, embL), mask=maskL) + pR * self.right(
       (x, embR), mask=maskR))
 
@@ -109,16 +117,19 @@ def gen_input_encoder(
 def gen_inner_model(*,
                     input_dim: int,
                     emb_dim: int,
-                    l1: float = 0.01) -> tf.keras.Model:
+                    l1: float = 0.001) -> tf.keras.Model:
   emb = tf.keras.Input(shape=(emb_dim,))
   h = tf.keras.layers.Dense(50, activation='relu')(emb)
   w = tf.keras.layers.Dense(
     input_dim,
     activity_regularizer=tf.keras.regularizers.L1(l1),
-    activation='softmax')(
+    activation='sigmoid')(
       h)
-  b = tf.keras.layers.Dense(1)(h)
+
+  b = tf.keras.layers.Dense(1, activation='tanh')(h)
+
   beta = tf.keras.layers.Dense(1)(h)
+
   return tf.keras.Model(inputs=emb, outputs=[w, b, beta])
 
 
