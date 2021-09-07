@@ -1,6 +1,6 @@
-from . import *  # noqa F403
-
 from absl import logging
+
+from . import *  # noqa F403
 
 
 # TODO: consider class registry instead of blind import.
