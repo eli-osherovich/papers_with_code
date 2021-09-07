@@ -1,7 +1,8 @@
 import abc
 import pathlib
 import tempfile
-from typing import Union
+import zipfile
+from typing import Optional, Union
 
 import pandas as pd
 import tensorflow as tf
@@ -46,26 +47,35 @@ class FileReader(abc.ABC):
 
 class FileAccessor():
 
-  def __init__(self, path: Union[str, pathlib.Path], *args, **kwargs) -> None:
-    self._path = path
-    self._args = args
+  def __init__(self,
+               path: Union[str, pathlib.Path],
+               *,
+               name: Union[None, str, pathlib.Path] = None,
+               **kwargs) -> None:
+    self._path = pathlib.Path(path)
     self._kwargs = kwargs
+    self._name = name
 
-  @property
-  def path(self):
-    return self._path
+  def xopen(self):
+    if zipfile.is_zipfile(self._path):
+      with zipfile.ZipFile(self._path) as zf:
+        return zf.open(self._name, **self._kwargs)
+    else:
+      return xopen.xopen(self._path, **self._kwargs)
 
-  def read(self, reader: FileReader):
-    with xopen.xopen(self.path, *self._args, **self._kwargs) as f:
-      return reader.read(f)
+  def read(self, reader: Optional[FileReader] = None):
+    with self.xopen() as f:
+      if reader is None:
+        return f.read()
+      else:
+        return reader.read(f)
 
 
 class PandasCSVReader(FileReader):
 
-  def __init__(self, *args, **kwargs) -> None:
+  def __init__(self, **kwargs) -> None:
     super().__init__()
-    self._args = args
     self._kwargs = kwargs
 
   def read(self, file_object):
-    return pd.read_csv(file_object, *self._args, **self._kwargs)
+    return pd.read_csv(file_object, **self._kwargs)
