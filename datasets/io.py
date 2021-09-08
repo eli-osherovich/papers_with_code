@@ -51,15 +51,21 @@ class FileAccessor():
                path: Union[str, pathlib.Path],
                *,
                name: Union[None, str, pathlib.Path] = None,
+               is_re: bool = False,
                **kwargs) -> None:
     self._path = pathlib.Path(path)
     self._kwargs = kwargs
     self._name = name
+    self._is_re = is_re
 
   def xopen(self):
     if zipfile.is_zipfile(self._path):
       with zipfile.ZipFile(self._path) as zf:
-        return zf.open(self._name, **self._kwargs)
+        if self._is_re:
+          name = [n for n in zf.namelist() if self._name in n][0]
+        else:
+          name = self._name
+        return zf.open(name, **self._kwargs)
     else:
       return xopen.xopen(self._path, **self._kwargs)
 
