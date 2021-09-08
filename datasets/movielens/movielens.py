@@ -7,14 +7,16 @@ from .. import dataset, io
 
 
 class Movielens(dataset.Dataset):
+  """Base class for all Movielens variants"""
+
   _TARGET_COLUMN = 'rating'
 
-  _RATINGS_FILE = 'ratings'
-  _ITEMS_FILE = 'movies'
-  _USERS_FILE = None
-  _SEP = ','
-  _HEADER = 0
   _ENCODING = 'utf-8'
+  _HEADER = 0
+  _ITEMS_FILE = 'movies'
+  _RATINGS_FILE = 'ratings'
+  _SEP = ','
+  _USERS_FILE = None
 
   def __init__(self, flavor: str) -> None:
     super().__init__()
@@ -140,6 +142,7 @@ class Movielens20M(Movielens):
 
 class Movielens10M(Movielens):
   """Movielens 10m dataset"""
+
   _HEADER = None
   _SEP = '::'
 
@@ -149,9 +152,10 @@ class Movielens10M(Movielens):
 
 class Movielens1M(Movielens):
   """Movielense 1M dataset"""
-  _SEP = '::'
-  _HEADER = None
+
   _ENCODING = 'iso-8859-1'
+  _HEADER = None
+  _SEP = '::'
 
   def __init__(self) -> None:
     super().__init__('1m')
@@ -164,8 +168,9 @@ class Movielens1M(Movielens):
 
 class Movielens100K(Movielens):
   """Movielens 100k dataset."""
-  _RATINGS_FILE = 'u.data'
+
   _HEADER = None
+  _RATINGS_FILE = 'u.data'
   _SEP = '\t'
 
   def __init__(self) -> None:
