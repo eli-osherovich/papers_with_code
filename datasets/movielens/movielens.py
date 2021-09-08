@@ -26,11 +26,17 @@ class Movielens(dataset.Dataset):
   def ds_path(self):
     return self.download_dataset(self._flavor)
 
-  def _generate_dataframe(self):
+  def _generate_dataframe(self, split_name):
+    if split_name != self._flavor:
+      raise AssertionError(
+        f'split_name must be {self._flavor}, called with {split_name}')
+
     ratings = self.ratings()
     items = self.items()
     items = self.items_postprocess(items)
-    return ratings.merge(items, how='inner', on='item').dropna()
+    ratings = ratings.merge(items, how='inner', on='item').dropna()
+    y = ratings.pop(self._TARGET_COLUMN)
+    return ratings, y
 
   def items_postprocess(self, items):
     # Extract release year.
