@@ -1,9 +1,10 @@
 import os
+from typing import Optional
 
+from absl import logging
 import numpy as np
 import psutil
 import tensorflow as tf
-from absl import logging
 
 
 def roundrobin_generator(arr, batch_size=1, rng=np.random.default_rng()):
@@ -73,3 +74,18 @@ def setup_omp():
   os.environ['OMP_SCHEDULE'] = 'DYNAMIC'
   # tf.config.threading.set_intra_op_parallelism_threads(num_cores)
   tf.config.threading.set_inter_op_parallelism_threads(num_threads)
+
+
+@tf.function
+def weighted_row_sum(x: tf.Tensor,
+                     weights: tf.Tensor,
+                     keepdims: float = False) -> tf.Tensor:
+
+  tf.ensure_shape(x, (None, None))
+  tf.ensure_shape(weights, (None, 1))
+
+  weights = tf.cast(weights, tf.keras.backend.floatx())
+  sum_ = tf.math.reduce_sum(weights)
+  weights = weights * tf.math.reciprocal_no_nan(sum_)
+  res = tf.math.reduce_sum(weights * x, axis=0, keepdims=keepdims)
+  return res
