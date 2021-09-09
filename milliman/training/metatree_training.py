@@ -1,9 +1,10 @@
 import gin
 import numpy as np
 import ray.tune
-import tensorflow as tf
-from sklearn.model_selection import RepeatedStratifiedKFold, train_test_split
+from sklearn.model_selection import RepeatedStratifiedKFold
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
+import tensorflow as tf
 
 from .. import model
 
@@ -54,6 +55,7 @@ def train(X, y, *, test_size: float, random_state: int, fit_params: dict,
     callbacks=[early_stop],
     fit_params=fit_params,
   )
+  print_tree(m, eval_ds)
   return m.evaluate(eval_ds, return_dict=True)
 
 
@@ -135,6 +137,9 @@ def _prepare_datasets(X_train, y_train, X_val, y_val, batch_size):
   pt = StandardScaler()
   pt.fit(X_train)
 
+  print(f'scale={pt.scale_.tolist()}')
+  print(f'mean={pt.mean_.tolist()}')
+
   X_train = pt.transform(X_train)
   X_val = pt.transform(X_val)
 
@@ -145,3 +150,30 @@ def _prepare_datasets(X_train, y_train, X_val, y_val, batch_size):
     len(X_val), drop_remainder=True)
 
   return train_ds, eval_ds
+
+
+def print_tree(model, ds):
+  import json
+
+  model.run_eagerly = True
+  model.predict(ds)
+
+  nodes = []
+
+  def _add_node(node):
+    res = {'id': node.id}
+    for a in [
+        'value', 'x', 'b', 'w', 'beta', 'threshold', 'split_feature_idx', 'geq',
+        'proba_right', 'ww'
+    ]:
+      if hasattr(node, a):
+        res[a] = getattr(node, a).numpy().tolist()
+    nodes.append(res)
+    if hasattr(node, 'left'):
+      _add_node(node.left)
+    if hasattr(node, 'right'):
+      _add_node(node.right)
+
+  with open('/tmp/tree.json', 'w') as f:
+    _add_node(model.tree)
+    json.dump(nodes, f)

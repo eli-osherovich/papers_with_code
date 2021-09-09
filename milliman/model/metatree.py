@@ -2,9 +2,11 @@ import functools
 from typing import Callable
 
 import tensorflow as tf
+import tensorflow_addons as tfa
 
 
 class TreeModel(tf.keras.Model):
+  """Class representing an entire tree"""
 
   def __init__(self, *, depth: int, input_dim: int, emb_dim: int) -> None:
     super().__init__()
@@ -22,6 +24,7 @@ class TreeModel(tf.keras.Model):
 
 
 class LeafNode(tf.keras.layers.Layer):
+  """Class represanting leaf nodes"""
 
   def __init__(self, model_fn: Callable[[], tf.keras.Model], id_: int = 0):
     super().__init__()
@@ -30,12 +33,13 @@ class LeafNode(tf.keras.layers.Layer):
 
   def call(self, inputs, *, mask=None):
     x, emb = inputs
-    del x  # unused
+    del x, mask  # unused
     self.value = self.model(emb)
     return self.value
 
 
 class InnerNode(tf.keras.layers.Layer):
+  """Class representing inner nodes"""
 
   def __init__(self,
                model_fn: Callable[[], tf.keras.Model],
@@ -50,12 +54,11 @@ class InnerNode(tf.keras.layers.Layer):
     x, emb = inputs
     w, b, beta = self.model(emb)
 
-    pR = tf.nn.sigmoid(beta *
-                       (tf.math.reduce_sum(w * x, axis=1, keepdims=True) + b))
+    proba_right = tf.nn.sigmoid(
+      beta * (tf.math.reduce_sum(w * x, axis=1, keepdims=True) + b))
 
-    self.add_loss(
-      self.proba_reg_weight *
-      tf.keras.losses.binary_crossentropy([0.5], tf.math.reduce_mean(pR)))
+    self.add_loss(self.proba_reg_weight * tf.keras.losses.binary_crossentropy(
+      [0.5], tf.math.reduce_mean(proba_right)))
 
     # During inference the behavior is different in two aspects:
     # 1. The system uses hard decision trees.
@@ -66,38 +69,39 @@ class InnerNode(tf.keras.layers.Layer):
       # Split by one feature only: the one that results in the largest logit.
       self.split_feature_idx = tf.math.argmax(w, axis=1)
       self.threshold = -tf.squeeze(b) / tf.gather(
-        w, self.split_feature_idx, batch_dims=1)
+        w, self.split_feature_idx, batch_dims=1, axis=1)
 
       # Depending on the sing of beta, the inequality may be either:
       # 1. geq (>=)
       # 2. leq (<=)
       self.geq = tf.squeeze(beta >= 0)
 
-      pR = tf.expand_dims(
-        tf.nn.sigmoid(tf.gather(logits, self.split_feature_idx, batch_dims=1)),
-        -1)
+      proba_right = tf.expand_dims(
+        tf.nn.sigmoid(
+          tf.gather(logits, self.split_feature_idx, batch_dims=1, axis=1)), -1)
 
       # Hard decision tree.
-      pR = tf.where(pR >= 0.5, 1.0, 0.0)
-      self.x = tf.gather(x, self.split_feature_idx, batch_dims=1)
-      self.w = tf.gather(w, self.split_feature_idx, batch_dims=1)
+      proba_right = tf.where(proba_right >= 0.5, 1.0, 0.0)
+      self.x = tf.gather(x, self.split_feature_idx, batch_dims=1, axis=1)
+      self.w = tf.gather(w, self.split_feature_idx, batch_dims=1, axis=1)
       self.ww = w
       self.beta = tf.squeeze(beta)
       self.b = tf.squeeze(b)
-      self.pR = tf.squeeze(pR)
+      self.proba_right = tf.squeeze(proba_right)
 
-    maskR = tf.math.logical_and(mask, pR >= 0.5)
-    maskL = tf.math.logical_and(mask, pR < 0.5)
-    embR = tf.cast(maskR, dtype=emb.dtype) * emb
-    embL = tf.cast(maskL, dtype=emb.dtype) * emb
+    mask_right = tf.math.logical_and(mask, proba_right >= 0.5)
+    mask_left = tf.math.logical_and(mask, proba_right < 0.5)
+    emb_right = tf.cast(mask_right, dtype=emb.dtype) * emb
+    emb_left = tf.cast(mask_left, dtype=emb.dtype) * emb
     tf.print(
       self.id,
       tf.math.count_nonzero(mask),
-      tf.math.count_nonzero(maskL),
-      tf.math.count_nonzero(maskR),
+      tf.math.count_nonzero(mask_left),
+      tf.math.count_nonzero(mask_right),
     )
-    return ((1 - pR) * self.left((x, embL), mask=maskL) + pR * self.right(
-      (x, embR), mask=maskR))
+    return ((1 - proba_right) * self.left(
+      (x, emb_left), mask=mask_left) + proba_right * self.right(
+        (x, emb_right), mask=mask_right))
 
 
 def gen_input_encoder(
@@ -111,20 +115,16 @@ def gen_input_encoder(
     tf.keras.layers.Dense(emb_dim, activation='relu'),
     tf.keras.layers.Dense(emb_dim, activation='relu'),
     tf.keras.layers.Dense(emb_dim, activation='relu'),
+    tf.keras.layers.Dropout(0.25),
   ])
 
 
-def gen_inner_model(*,
-                    input_dim: int,
-                    emb_dim: int,
-                    l1: float = 0.001) -> tf.keras.Model:
+def gen_inner_model(*, input_dim: int, emb_dim: int) -> tf.keras.Model:
   emb = tf.keras.Input(shape=(emb_dim,))
-  h = tf.keras.layers.Dense(50, activation='relu')(emb)
-  w = tf.keras.layers.Dense(
-    input_dim,
-    activity_regularizer=tf.keras.regularizers.L1(l1),
-    activation='sigmoid')(
-      h)
+  h = tf.keras.layers.Dense(emb_dim, activation='relu')(emb)
+  w = tf.keras.layers.Dense(input_dim)(h)
+  w = tfa.activations.hardshrink(w, lower=0, upper=0.25)
+  w = tfa.activations.sparsemax(w)
 
   b = tf.keras.layers.Dense(1, activation='tanh')(h)
 

@@ -1,6 +1,7 @@
 import pandas as pd
 
-from .. import dataset, io
+from .. import dataset
+from .. import io
 
 
 class MillimanDataset(dataset.Dataset):
@@ -21,6 +22,8 @@ class MillimanDataset(dataset.Dataset):
       false_values=['no'],
     )
     X = file_accessor.read(file_reader)
+    X.drop(['percent_of_income'], axis=1, inplace=True)
     y = X.pop(self._TARGET_COLUMN)
     X = pd.get_dummies(X)
+    print(f'cols=[{X.columns}]')
     return X, y
