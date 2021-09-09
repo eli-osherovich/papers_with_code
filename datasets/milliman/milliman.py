@@ -24,6 +24,6 @@ class MillimanDataset(dataset.Dataset):
     X = file_accessor.read(file_reader)
     X.drop(['percent_of_income'], axis=1, inplace=True)
     y = X.pop(self._TARGET_COLUMN)
-    X = pd.get_dummies(X)
+    X = pd.get_dummies(X, prefix_sep='__:__')
     print(f'cols=[{X.columns}]')
     return X, y
