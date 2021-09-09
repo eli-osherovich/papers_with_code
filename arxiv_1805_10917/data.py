@@ -1,6 +1,6 @@
+from absl import flags
 import tensorflow as tf
 import tensorflow_datasets as tfds
-from absl import flags
 
 from . import transform
 

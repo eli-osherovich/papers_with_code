@@ -13,7 +13,8 @@ if __name__ == '__main__' and __package__ is None:
   os.environ['PYTHONPATH'] = pkg_path.parent.as_posix()
   __package__ = f'{pkg_name}.{module_name}'  # noqa: A001
 
-from absl import app, flags
+from absl import app
+from absl import flags
 
 from . import training
 

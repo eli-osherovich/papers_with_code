@@ -11,12 +11,13 @@ if __name__ == '__main__' and __package__ is None:
   sys.path.append(pkg_path.parent.as_posix())
   __package__ = f'{pkg_name}.{module_name}'  # noqa: A001
 
+from absl import app
+from absl import flags
 import tensorflow as tf
 import tensorflow_datasets as tfds
-from absl import app, flags
 
-from ..common import utils
 from . import tree
+from ..common import utils
 
 FLAGS = flags.FLAGS
 

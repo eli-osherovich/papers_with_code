@@ -1,6 +1,6 @@
+from absl import flags
 import tensorflow as tf
 import tensorflow_hub as hub
-from absl import flags
 
 FLAGS = flags.FLAGS
 flags.DEFINE_string("model", "https://tfhub.dev/google/bit/s-r50x1/1",

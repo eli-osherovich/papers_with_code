@@ -2,8 +2,8 @@
 
 # Python's relative import was invented by pure PERVERTS.
 if __name__ == '__main__' and __package__ is None:
-  import sys
   import pathlib
+  import sys
   module_path = pathlib.Path(__file__).parent.resolve()
   module_name = module_path.name
   pkg_path = module_path.parent

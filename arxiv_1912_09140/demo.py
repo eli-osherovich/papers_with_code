@@ -15,7 +15,8 @@ import argparse
 
 import tensorflow as tf
 
-from . import movielens_data, tree
+from . import movielens_data
+from . import tree
 
 
 def parse_args():

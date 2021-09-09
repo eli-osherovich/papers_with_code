@@ -1,5 +1,5 @@
-import tensorflow as tf
 from absl import flags
+import tensorflow as tf
 
 FLAGS = flags.FLAGS
 

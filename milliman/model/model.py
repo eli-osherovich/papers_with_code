@@ -2,7 +2,9 @@ import enum
 
 from absl import flags
 
-from . import metatree_model, tree_model, xgb_model
+from . import metatree_model
+from . import tree_model
+from . import xgb_model
 
 FLAGS = flags.FLAGS
 

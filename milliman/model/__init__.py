@@ -2,7 +2,8 @@ import pathlib
 
 import gin
 
-from .model import MODEL, get_model  # noqa F401
+from .model import get_model  # noqa F401
+from .model import MODEL
 
 _GIN_CONFIG_FILE = 'config.gin'
 

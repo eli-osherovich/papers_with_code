@@ -1,8 +1,8 @@
-import tensorflow as tf
 from absl import flags
+import tensorflow as tf
 
-from ..transform import transform
 from ...datasets import common as ds_common
+from ..transform import transform
 
 FLAGS = flags.FLAGS
 

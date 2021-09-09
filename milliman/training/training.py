@@ -1,7 +1,10 @@
 from absl import flags
 
-from .. import data, model
-from . import metatree_training, tree_training, xgb_training
+from . import metatree_training
+from . import tree_training
+from . import xgb_training
+from .. import data
+from .. import model
 
 FLAGS = flags.FLAGS
 

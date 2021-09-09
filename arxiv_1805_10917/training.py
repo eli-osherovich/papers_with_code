@@ -1,7 +1,8 @@
-import tensorflow as tf
 from absl import flags
+import tensorflow as tf
 
-from . import data, model
+from . import data
+from . import model
 
 FLAGS = flags.FLAGS
 

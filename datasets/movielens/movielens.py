@@ -3,7 +3,8 @@ import re
 import numpy as np
 import pandas as pd
 
-from .. import dataset, io
+from .. import dataset
+from .. import io
 
 
 class Movielens(dataset.Dataset):
@@ -91,7 +92,7 @@ class Movielens(dataset.Dataset):
       sep=self._SEP,
       encoding=self._ENCODING)
 
-    # Coerce some minor diffs:
+    # Coerce same features despite minor diffs:
     # 'unknown' and '(no genres listed)'.
     # "Children's" and "Children"
     df['genres'] = df['genres'].str.replace(

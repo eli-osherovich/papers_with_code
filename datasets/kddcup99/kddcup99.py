@@ -1,6 +1,7 @@
 import pandas as pd
 
-from .. import dataset, io
+from .. import dataset
+from .. import io
 
 
 class KddCup99(dataset.Dataset):

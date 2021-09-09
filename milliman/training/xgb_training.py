@@ -2,12 +2,12 @@ import gin
 import numpy as np
 import ray.tune
 import ray.tune.suggest.optuna
+from sklearn.model_selection import cross_validate
+from sklearn.model_selection import RepeatedStratifiedKFold
+from sklearn.model_selection import train_test_split
 
-from sklearn.model_selection import (RepeatedStratifiedKFold, cross_validate,
-                                     train_test_split)
-
-from ...common import utils
 from .. import model
+from ...common import utils
 
 gin.external_configurable(ray.tune.suggest.optuna.OptunaSearch)
 

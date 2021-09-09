@@ -1,8 +1,8 @@
 import functools
 import itertools
 
-import tensorflow as tf
 from absl import flags
+import tensorflow as tf
 
 from ..common import utils
 

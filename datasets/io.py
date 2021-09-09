@@ -1,8 +1,8 @@
 import abc
 import pathlib
 import tempfile
-import zipfile
 from typing import Optional, Union
+import zipfile
 
 import pandas as pd
 import tensorflow as tf

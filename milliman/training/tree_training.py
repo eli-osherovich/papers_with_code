@@ -1,9 +1,10 @@
 import gin
 import numpy as np
 import ray.tune
-import tensorflow as tf
-from sklearn.model_selection import RepeatedStratifiedKFold, train_test_split
+from sklearn.model_selection import RepeatedStratifiedKFold
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
+import tensorflow as tf
 
 from .. import model
 
