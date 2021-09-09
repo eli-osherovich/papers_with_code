@@ -12,6 +12,6 @@ def get_model(depth: int, input_dim: int, emb_dim: int) -> tf.keras.Model:
     metrics=[
       tf.keras.metrics.BinaryAccuracy(name='acc'),
     ],
-    optimizer=tf.keras.optimizers.Adam(learning_rate=3e-4))
+    optimizer=tf.keras.optimizers.Adam(learning_rate=3e-3))
 
   return model

@@ -54,17 +54,17 @@ class InnerNode(tf.keras.layers.Layer):
     x, emb = inputs
     w, b, beta = self.model(emb)
 
+    logits = beta * (w * x + b)
     proba_right = tf.nn.sigmoid(
-      beta * (tf.math.reduce_sum(w * x, axis=1, keepdims=True) + b))
+      tf.math.reduce_sum(logits, axis=1, keepdims=True))
 
-    self.add_loss(self.proba_reg_weight * tf.keras.losses.binary_crossentropy(
-      [0.5], tf.math.reduce_mean(proba_right)))
-
-    # During inference the behavior is different in two aspects:
-    # 1. The system uses hard decision trees.
-    # 2. Decisions are based on a single feature.
-    if not training:
-      logits = beta * (w * x + b)
+    if training:
+      self.add_loss(self.proba_reg_weight * tf.keras.losses.binary_crossentropy(
+        [0.5], tf.math.reduce_mean(proba_right)))
+    else:
+      # During inference the behavior is different in two aspects:
+      # 1. The system uses hard decision trees.
+      # 2. Decisions are based on a single feature.
 
       # Split by one feature only: the one that results in the largest logit.
       self.split_feature_idx = tf.math.argmax(w, axis=1)
@@ -91,14 +91,14 @@ class InnerNode(tf.keras.layers.Layer):
 
     mask_right = tf.math.logical_and(mask, proba_right >= 0.5)
     mask_left = tf.math.logical_and(mask, proba_right < 0.5)
-    emb_right = tf.cast(mask_right, dtype=emb.dtype) * emb
-    emb_left = tf.cast(mask_left, dtype=emb.dtype) * emb
-    tf.print(
-      self.id,
-      tf.math.count_nonzero(mask),
-      tf.math.count_nonzero(mask_left),
-      tf.math.count_nonzero(mask_right),
-    )
+    emb_right = tf.cast(mask_right, emb.dtype) * emb
+    emb_left = tf.cast(mask_left, emb.dtype) * emb
+    # tf.print(
+    #   self.id,
+    #   tf.math.count_nonzero(mask),
+    #   tf.math.count_nonzero(mask_left),
+    #   tf.math.count_nonzero(mask_right),
+    # )
     return ((1 - proba_right) * self.left(
       (x, emb_left), mask=mask_left) + proba_right * self.right(
         (x, emb_right), mask=mask_right))
@@ -111,19 +111,21 @@ def gen_input_encoder(
 ) -> tf.keras.Model:
   return tf.keras.Sequential([
     tf.keras.layers.InputLayer(input_shape=(input_dim,)),
+    tf.keras.layers.GaussianNoise(0.25),
     tf.keras.layers.Dense(emb_dim, activation='relu'),
     tf.keras.layers.Dense(emb_dim, activation='relu'),
     tf.keras.layers.Dense(emb_dim, activation='relu'),
     tf.keras.layers.Dense(emb_dim, activation='relu'),
-    tf.keras.layers.Dropout(0.25),
+    tf.keras.layers.Dropout(0.5),
   ])
 
 
 def gen_inner_model(*, input_dim: int, emb_dim: int) -> tf.keras.Model:
   emb = tf.keras.Input(shape=(emb_dim,))
   h = tf.keras.layers.Dense(emb_dim, activation='relu')(emb)
-  w = tf.keras.layers.Dense(input_dim)(h)
-  w = tfa.activations.hardshrink(w, lower=0, upper=0.25)
+  w = tf.keras.layers.Dense(input_dim, bias_initializer='ones')(h)
+  w /= tf.math.reduce_max(w, axis=1, keepdims=True)
+  w = tfa.activations.hardshrink(w, lower=0, upper=0.6)
   w = tfa.activations.sparsemax(w)
 
   b = tf.keras.layers.Dense(1, activation='tanh')(h)
