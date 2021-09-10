@@ -62,23 +62,31 @@ class InnerNode(tf.keras.layers.Layer):
     w, b, beta = self.model(emb)
 
     logits = beta * (w * x + b)
+
+    w_max_idx = tf.math.argmax(w, axis=1)
+
+    # Use only one feature as we do during inference.
     proba_right = tf.nn.sigmoid(
-      tf.math.reduce_sum(logits, axis=1, keepdims=True)
+      tf.gather(logits, w_max_idx, batch_dims=1, axis=1)[..., None]
     )
 
     if training:
+      # We do not use this loss for evaluation (hence, for monitoring either)
       self.add_loss(
         self.proba_reg_weight *
         tf.keras.losses.binary_crossentropy([0.5],
                                             tf.math.reduce_mean(proba_right))
       )
     else:
-      # During inference the behavior is different in two aspects:
+      # During inference the behavior is different in this aspect:
       # 1. The system uses hard decision trees.
-      # 2. Decisions are based on a single feature.
 
+      # Hard decision tree.
+      proba_right = tf.where(proba_right >= 0.5, 1.0, 0.0)
+
+      # Bookeeping for tree printing.
       # Split by one feature only: the one that results in the largest logit.
-      self.split_feature_idx = tf.math.argmax(w, axis=1)
+      self.split_feature_idx = w_max_idx
       self.threshold = -tf.squeeze(b) / tf.gather(
         w, self.split_feature_idx, batch_dims=1, axis=1
       )
@@ -88,17 +96,8 @@ class InnerNode(tf.keras.layers.Layer):
       # 2. leq (<=)
       self.geq = tf.squeeze(beta >= 0)
 
-      proba_right = tf.expand_dims(
-        tf.nn.sigmoid(
-          tf.gather(logits, self.split_feature_idx, batch_dims=1, axis=1)
-        ),
-        -1,
-      )
-
-      # Hard decision tree.
-      proba_right = tf.where(proba_right >= 0.5, 1.0, 0.0)
-      self.x = tf.gather(x, self.split_feature_idx, batch_dims=1, axis=1)
-      self.w = tf.gather(w, self.split_feature_idx, batch_dims=1, axis=1)
+      self.x = tf.gather(x, w_max_idx, batch_dims=1, axis=1)
+      self.w = tf.gather(w, w_max_idx, batch_dims=1, axis=1)
       self.ww = w
       self.beta = tf.squeeze(beta)
       self.b = tf.squeeze(b)
@@ -169,7 +168,6 @@ def gen_inner_model(*, input_dim: int, emb_dim: int) -> tf.keras.Model:
     h
   )
   w /= tf.math.reduce_max(w, axis=1, keepdims=True)
-  w = tfa.activations.hardshrink(w, lower=0, upper=0.6)
   w = tfa.activations.sparsemax(w)
   w /= tf.math.reduce_max(w, axis=1, keepdims=True)
 
@@ -179,6 +177,7 @@ def gen_inner_model(*, input_dim: int, emb_dim: int) -> tf.keras.Model:
     h
   )
   # TODO: add true b's bounds:
+  # to this end, we might try different b per feature.
   beta = tf.keras.layers.Dense(
     1, kernel_regularizer=tf.keras.regularizers.L1L2(L1, L2)
   )(
