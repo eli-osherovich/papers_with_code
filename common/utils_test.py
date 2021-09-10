@@ -6,7 +6,7 @@ import pytest
 from . import utils
 
 
-@pytest.mark.parametrize("batch_size", [-1.0, 0., 1.0, 1.5])
+@pytest.mark.parametrize("batch_size", [-1.0, 0.0, 1.0, 1.5])
 def test_batch_float(batch_size):
   with pytest.raises(AssertionError):
     rrg = utils.roundrobin_generator([1, 2, 3], batch_size)

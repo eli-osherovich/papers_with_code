@@ -8,10 +8,11 @@ import tensorflow as tf
 
 
 def roundrobin_generator(arr, batch_size=1, rng=np.random.default_rng()):
-  assert isinstance(batch_size, (int, np.integer)), \
-    f'Batch must be an integral type, got {type(batch_size)}'
+  assert isinstance(
+    batch_size, (int, np.integer)
+  ), f"Batch must be an integral type, got {type(batch_size)}"
 
-  assert batch_size > 0, f'Batch must be strictly positive, got {batch_size}'
+  assert batch_size > 0, f"Batch must be strictly positive, got {batch_size}"
 
   # Make trivial cases indexable in the way we use it.
   if isinstance(arr, (list, tuple)):
@@ -21,13 +22,13 @@ def roundrobin_generator(arr, batch_size=1, rng=np.random.default_rng()):
 
   if batch_size > arr_len:
     logging.warning(
-      'Batch size %d is larger than the number of elements in the sequence: %d',
+      "Batch size %d is larger than the number of elements in the sequence: %d",
       batch_size,
       arr_len,
     )
 
   multiplicity = np.ceil(batch_size / arr_len)
-  logging.info('Maximal element multiplicity in a batch: %d', multiplicity)
+  logging.info("Maximal element multiplicity in a batch: %d", multiplicity)
 
   all_indices = np.repeat(np.arange(arr_len), multiplicity)
   all_indices_len = len(all_indices)
@@ -67,19 +68,19 @@ def setup_omp():
   """
   num_cores = psutil.cpu_count(logical=False)
   num_threads = psutil.cpu_count(logical=True)
-  os.environ['KMP_AFFINITY'] = 'granularity=fine,compact,1,0'
-  os.environ['KMP_BLOCKTIME'] = '0'
-  os.environ['OMP_DYNAMIC'] = 'TRUE'
-  os.environ['OMP_NUM_THREADS'] = str(num_cores)
-  os.environ['OMP_SCHEDULE'] = 'DYNAMIC'
+  os.environ["KMP_AFFINITY"] = "granularity=fine,compact,1,0"
+  os.environ["KMP_BLOCKTIME"] = "0"
+  os.environ["OMP_DYNAMIC"] = "TRUE"
+  os.environ["OMP_NUM_THREADS"] = str(num_cores)
+  os.environ["OMP_SCHEDULE"] = "DYNAMIC"
   # tf.config.threading.set_intra_op_parallelism_threads(num_cores)
   tf.config.threading.set_inter_op_parallelism_threads(num_threads)
 
 
 @tf.function
-def weighted_row_sum(x: tf.Tensor,
-                     weights: tf.Tensor,
-                     keepdims: float = False) -> tf.Tensor:
+def weighted_row_sum(
+  x: tf.Tensor, weights: tf.Tensor, keepdims: float = False
+) -> tf.Tensor:
 
   tf.ensure_shape(x, (None, None))
   tf.ensure_shape(weights, (None, 1))

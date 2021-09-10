@@ -7,20 +7,20 @@ import tensorflow as tf
 from . import io
 
 
-class Dataset():
+class Dataset:
 
   @property
   def cls_package(self):
-    return self.__module__.rsplit('.', 1)[0]
+    return self.__module__.rsplit(".", 1)[0]
 
   @property
   def config_datasets(self):
-    dl_config = importlib.import_module('.dl_config', self.cls_package)
+    dl_config = importlib.import_module(".dl_config", self.cls_package)
     return dl_config.DATASETS
 
   @property
   def feature_dict(self):
-    ds_config = importlib.import_module('.ds_config', self.cls_package)
+    ds_config = importlib.import_module(".ds_config", self.cls_package)
     return ds_config.feature_dict
 
   def download_dataset(self, ds_name):

@@ -45,16 +45,18 @@ class InnerNode(tf.keras.layers.Layer):
     rI = calc_rI(h, mask)
     w, b, beta = self.model((r, rI))
 
-    pR = tf.nn.sigmoid(beta * (tf.einsum('bd, bnd -> bn', w, x) + b))
-    self.add_loss(self.reg_weight * tf.math.reduce_mean(
-      tf.losses.binary_crossentropy(tf.constant(0.5, shape=pR.shape), pR)))
+    pR = tf.nn.sigmoid(beta * (tf.einsum("bd, bnd -> bn", w, x) + b))
+    self.add_loss(
+      self.reg_weight * tf.math.reduce_mean(
+        tf.losses.binary_crossentropy(tf.constant(0.5, shape=pR.shape), pR)
+      )
+    )
     maskR = tf.math.logical_and(mask, pR >= 0.5)
     maskL = tf.math.logical_and(mask, pR < 0.5)
 
     # tf.print(tf.math.reduce_sum(tf.cast(maskR, tf.int64)))
     # tf.print(tf.math.reduce_sum(tf.cast(maskL, tf.int64)))
-    return (pR * self.right(inputs, maskR) +
-            (1 - pR) * self.left(inputs, maskL))
+    return pR * self.right(inputs, maskR) + (1 - pR) * self.left(inputs, maskL)
 
 
 @tf.function
@@ -66,7 +68,7 @@ def calc_rI(h: tf.Tensor, mask: tf.Tensor) -> tf.Tensor:
   weights = tf.cast(mask, tf.keras.backend.floatx())
   sum_ = tf.math.reduce_sum(weights, axis=-1, keepdims=True)
   weights = weights * tf.math.reciprocal_no_nan(sum_)
-  rI = tf.einsum('pr, pre -> pe', weights, h)
+  rI = tf.einsum("pr, pre -> pe", weights, h)
   return rI
 
 
@@ -85,8 +87,8 @@ def gen_value_encoder(emb_dim):
   r = tf.keras.Input(shape=(emb_dim,))
   rI = tf.keras.Input(shape=(emb_dim,))
   x = tf.keras.layers.concatenate([r, rI])
-  x = tf.keras.layers.Dense(20, activation='relu')(x)
-  x = tf.keras.layers.Dense(1, activation='sigmoid')(x)
+  x = tf.keras.layers.Dense(20, activation="relu")(x)
+  x = tf.keras.layers.Dense(1, activation="sigmoid")(x)
   return tf.keras.Model(inputs=[r, rI], outputs=x)
 
 
@@ -95,9 +97,9 @@ def gen_input_encoder(input_dim, emb_dim):
   x = tf.keras.Input(shape=(input_dim,))
   y = tf.keras.Input(shape=(1,))
   h = tf.keras.layers.concatenate((x, y))
-  h = tf.keras.layers.Dense(emb_dim, activation='relu')(h)
-  h = tf.keras.layers.Dense(emb_dim, activation='relu')(h)
-  h = tf.keras.layers.Dense(emb_dim, activation='relu')(h)
+  h = tf.keras.layers.Dense(emb_dim, activation="relu")(h)
+  h = tf.keras.layers.Dense(emb_dim, activation="relu")(h)
+  h = tf.keras.layers.Dense(emb_dim, activation="relu")(h)
   h = tf.keras.layers.Dense(emb_dim)(h)
   return tf.keras.Model(inputs=(x, y), outputs=h)
 
@@ -107,12 +109,14 @@ def gen_split_model(input_dim, emb_dim, l1=0.01):
   r = tf.keras.Input(shape=(emb_dim,))
   rI = tf.keras.Input(shape=(emb_dim,))
   x = tf.keras.layers.concatenate([r, rI])
-  x = tf.keras.layers.Dense(50, activation='relu')(x)
+  x = tf.keras.layers.Dense(50, activation="relu")(x)
   w = tf.keras.layers.Dense(
     input_dim,
     activity_regularizer=tf.keras.regularizers.L1(l1),
-    activation='softmax')(
-      x)
+    activation="softmax",
+  )(
+    x
+  )
   b = tf.keras.layers.Dense(1)(x)
   beta = tf.keras.layers.Dense(1)(x)
   return tf.keras.Model(inputs=[r, rI], outputs=[w, b, beta])

@@ -16,7 +16,7 @@ class MODEL(enum.Enum):
   METATREE = 3
 
 
-flags.DEFINE_enum_class('model', MODEL.TREE, MODEL, 'Model to train')
+flags.DEFINE_enum_class("model", MODEL.TREE, MODEL, "Model to train")
 
 
 def get_model(model: MODEL, **model_args):

@@ -4,6 +4,7 @@
 if __name__ == "__main__" and __package__ is None:
   import os
   import sys
+
   module_path = os.path.abspath(os.path.join(__file__, ".."))
   module_name = os.path.basename(module_path)
   pkg_path = os.path.abspath(os.path.join(__file__, "..", ".."))

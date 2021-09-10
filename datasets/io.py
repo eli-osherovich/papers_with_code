@@ -8,7 +8,7 @@ import pandas as pd
 import tensorflow as tf
 import xopen
 
-_DATASETS_DIR = 'pwc-datasets'
+_DATASETS_DIR = "pwc-datasets"
 
 
 def download_dataset(
@@ -22,16 +22,17 @@ def download_dataset(
 
   if ds_name not in dl_config:
     raise ValueError(
-      f'Dataset name {ds_name} cannot be found in the download config {dl_config}'  # noqa E501
+      f"Dataset name {ds_name} cannot be found in the download config {dl_config}"  # noqa E501
     )
 
   cache_dir.mkdir(parents=True, exist_ok=True)
 
-  uri = dl_config[ds_name]['uri']
-  checksum = dl_config[ds_name].get('checksum')
+  uri = dl_config[ds_name]["uri"]
+  checksum = dl_config[ds_name].get("checksum")
 
   data_path = tf.keras.utils.get_file(
-    origin=uri, file_hash=checksum, cache_dir=cache_dir, cache_subdir='.')
+    origin=uri, file_hash=checksum, cache_dir=cache_dir, cache_subdir="."
+  )
   return pathlib.Path(data_path)
 
 
@@ -45,14 +46,16 @@ class FileReader(abc.ABC):
     raise NotImplementedError
 
 
-class FileAccessor():
+class FileAccessor:
 
-  def __init__(self,
-               path: Union[str, pathlib.Path],
-               *,
-               name: Union[None, str, pathlib.Path] = None,
-               is_re: bool = False,
-               **kwargs) -> None:
+  def __init__(
+    self,
+    path: Union[str, pathlib.Path],
+    *,
+    name: Union[None, str, pathlib.Path] = None,
+    is_re: bool = False,
+    **kwargs,
+  ) -> None:
     self._path = pathlib.Path(path)
     self._kwargs = kwargs
     self._name = name

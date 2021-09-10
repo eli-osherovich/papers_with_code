@@ -3,8 +3,9 @@ import tensorflow as tf
 import tensorflow_hub as hub
 
 FLAGS = flags.FLAGS
-flags.DEFINE_string("model", "https://tfhub.dev/google/bit/s-r50x1/1",
-                    "TF HUB's  model handle")
+flags.DEFINE_string(
+  "model", "https://tfhub.dev/google/bit/s-r50x1/1", "TF HUB's  model handle"
+)
 
 
 def get_model(n_classes):

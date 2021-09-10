@@ -7,96 +7,96 @@ _BOOL_TYPE = np.uint8
 _CATEGORICAL_TYPE = pd.api.types.CategoricalDtype
 
 feature_dict = {
-  'user':
+  "user":
     _INT_TYPE,
-  'item':
+  "item":
     _INT_TYPE,
-  'rating':
+  "rating":
     _FLOAT_TYPE,
-  'timestamp':
+  "timestamp":
     _INT_TYPE,
-  'title':
+  "title":
     str,
-  'release date':
+  "release date":
     str,
-  'video release date':
+  "video release date":
     str,
-  'release year':
+  "release year":
     _FLOAT_TYPE,
-  'IMDb URL':
+  "IMDb URL":
     str,
-  'genres':
+  "genres":
     str,
-  'unknown':  # coerce with '(no genres listed)' in later datasets.
+  "unknown":
+    _BOOL_TYPE,  # coerce with '(no genres listed)' in later datasets.
+  "Action":
     _BOOL_TYPE,
-  'Action':
+  "Adventure":
     _BOOL_TYPE,
-  'Adventure':
+  "Animation":
     _BOOL_TYPE,
-  'Animation':
+  "Children":
     _BOOL_TYPE,
-  'Children':
+  "Comedy":
     _BOOL_TYPE,
-  'Comedy':
+  "Crime":
     _BOOL_TYPE,
-  'Crime':
+  "Documentary":
     _BOOL_TYPE,
-  'Documentary':
+  "Drama":
     _BOOL_TYPE,
-  'Drama':
+  "Fantasy":
     _BOOL_TYPE,
-  'Fantasy':
+  "Film-Noir":
     _BOOL_TYPE,
-  'Film-Noir':
+  "Horror":
     _BOOL_TYPE,
-  'Horror':
+  "IMAX":
     _BOOL_TYPE,
-  'IMAX':
+  "Musical":
     _BOOL_TYPE,
-  'Musical':
+  "Mystery":
     _BOOL_TYPE,
-  'Mystery':
+  "Romance":
     _BOOL_TYPE,
-  'Romance':
+  "Sci-Fi":
     _BOOL_TYPE,
-  'Sci-Fi':
+  "Thriller":
     _BOOL_TYPE,
-  'Thriller':
+  "War":
     _BOOL_TYPE,
-  'War':
+  "Western":
     _BOOL_TYPE,
-  'Western':
-    _BOOL_TYPE,
-  'age':
+  "age":
     _INT_TYPE,
-  'gender':
-    _CATEGORICAL_TYPE(['M', 'F']),
-  'occupation':
+  "gender":
+    _CATEGORICAL_TYPE(["M", "F"]),
+  "occupation":
     _CATEGORICAL_TYPE([
-      'administrator',
-      'artist',
-      'doctor',
-      'educator',
-      'engineer',
-      'entertainment',
-      'executive',
-      'healthcare',
-      'homemaker',
-      'lawyer',
-      'librarian',
-      'marketing',
-      'none',
-      'other',
-      'programmer',
-      'retired',
-      'salesman',
-      'scientist',
-      'student',
-      'technician',
-      'writer',
+      "administrator",
+      "artist",
+      "doctor",
+      "educator",
+      "engineer",
+      "entertainment",
+      "executive",
+      "healthcare",
+      "homemaker",
+      "lawyer",
+      "librarian",
+      "marketing",
+      "none",
+      "other",
+      "programmer",
+      "retired",
+      "salesman",
+      "scientist",
+      "student",
+      "technician",
+      "writer",
     ]),
-  'occupation_num':
+  "occupation_num":
     _INT_TYPE,
-  'zipcode':
-    str  # A couple of zipcodes are not numerical...
+  "zipcode":
+    str,  # A couple of zipcodes are not numerical...
 }

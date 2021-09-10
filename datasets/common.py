@@ -9,8 +9,8 @@ def cls_factory(cls, **kwargs):
     obj = globals()[cls](**kwargs)
     return obj
   except KeyError as e:
-    logging.error('Cannot find DS class %s', cls)
-    raise ValueError(f'Unable to load class called {cls}') from e
+    logging.error("Cannot find DS class %s", cls)
+    raise ValueError(f"Unable to load class called {cls}") from e
 
 
 def load_dataset(ds_cls, *splits, **kwargs):

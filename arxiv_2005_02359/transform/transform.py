@@ -6,16 +6,16 @@ import tensorflow as tf
 FLAGS = flags.FLAGS
 
 flags.DEFINE_integer(
-  'n_transforms',
+  "n_transforms",
   default=64,
-  help='Number of transforms to use',
+  help="Number of transforms to use",
   lower_bound=1,
 )
 
 flags.DEFINE_integer(
-  'transform_dim',
+  "transform_dim",
   default=64,
-  help='Dimensionality of the transformed data',
+  help="Dimensionality of the transformed data",
   lower_bound=1,
 )
 
@@ -30,13 +30,14 @@ def apply_transforms(trans: tf.Tensor,
                      batch: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
   batch_size = batch.shape[0]
   if batch_size is None:
-    raise RuntimeError('Batch size must be constant, use drop_remainder=True')
+    raise RuntimeError("Batch size must be constant, use drop_remainder=True")
 
   n_trans = trans.shape[0]
   trans_dim = trans.shape[1]
 
-  batch_transformed = tf.einsum('tdn, bn -> tbd', trans, batch)
-  batch_transformed = tf.reshape(batch_transformed,
-                                 [batch_size * n_trans, trans_dim])
+  batch_transformed = tf.einsum("tdn, bn -> tbd", trans, batch)
+  batch_transformed = tf.reshape(
+    batch_transformed, [batch_size * n_trans, trans_dim]
+  )
   labels = tf.repeat(tf.range(n_trans), batch_size)
   return batch_transformed, labels

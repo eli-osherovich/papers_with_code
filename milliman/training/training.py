@@ -8,19 +8,20 @@ from .. import model
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_enum('action', 'train', ['train', 'train_cv', 'tune'],
-                  'Action to perform')
+flags.DEFINE_enum(
+  "action", "train", ["train", "train_cv", "tune"], "Action to perform"
+)
 
 
 def _get_action():
-  if FLAGS.action == 'train':
-    return 'train'
-  elif FLAGS.action == 'train_cv':
-    return 'train_cv'
-  elif FLAGS.action == 'tune':
-    return 'tune'
+  if FLAGS.action == "train":
+    return "train"
+  elif FLAGS.action == "train_cv":
+    return "train_cv"
+  elif FLAGS.action == "tune":
+    return "tune"
   else:
-    raise RuntimeError('Unknown action: %s', FLAGS.action)
+    raise RuntimeError("Unknown action: %s", FLAGS.action)
 
 
 def _get_model_module():
@@ -31,7 +32,7 @@ def _get_model_module():
   elif FLAGS.model == model.MODEL.METATREE:
     return metatree_training
   else:
-    raise RuntimeError('Unknown model: %s', FLAGS.model)
+    raise RuntimeError("Unknown model: %s", FLAGS.model)
 
 
 def train():

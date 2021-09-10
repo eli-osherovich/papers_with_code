@@ -7,213 +7,213 @@ _BOOL_TYPE = np.int32
 _CATEGORICAL_TYPE = pd.api.types.CategoricalDtype
 
 feature_dict = {
-  'duration':
+  "duration":
     _INT_TYPE,
-  'protocol_type':
-    _CATEGORICAL_TYPE(['icmp', 'tcp', 'udp']),
-  'service':
+  "protocol_type":
+    _CATEGORICAL_TYPE(["icmp", "tcp", "udp"]),
+  "service":
     _CATEGORICAL_TYPE([
-      'aol',
-      'auth',
-      'bgp',
-      'courier',
-      'csnet_ns',
-      'ctf',
-      'daytime',
-      'discard',
-      'domain',
-      'domain_u',
-      'echo',
-      'eco_i',
-      'ecr_i',
-      'efs',
-      'exec',
-      'finger',
-      'ftp',
-      'ftp_data',
-      'gopher',
-      'harvest',
-      'hostnames',
-      'http',
-      'http_2784',
-      'http_443',
-      'http_8001',
-      'icmp',
-      'imap4',
-      'IRC',
-      'iso_tsap',
-      'klogin',
-      'kshell',
-      'ldap',
-      'link',
-      'login',
-      'mtp',
-      'name',
-      'netbios_dgm',
-      'netbios_ns',
-      'netbios_ssn',
-      'netstat',
-      'nnsp',
-      'nntp',
-      'ntp_u',
-      'other',
-      'pm_dump',
-      'pop_2',
-      'pop_3',
-      'printer',
-      'private',
-      'red_i',
-      'remote_job',
-      'rje',
-      'shell',
-      'smtp',
-      'sql_net',
-      'ssh',
-      'sunrpc',
-      'supdup',
-      'systat',
-      'telnet',
-      'tftp_u',
-      'time',
-      'tim_i',
-      'urh_i',
-      'urp_i',
-      'uucp',
-      'uucp_path',
-      'vmnet',
-      'whois',
-      'X11',
-      'Z39_50',
+      "aol",
+      "auth",
+      "bgp",
+      "courier",
+      "csnet_ns",
+      "ctf",
+      "daytime",
+      "discard",
+      "domain",
+      "domain_u",
+      "echo",
+      "eco_i",
+      "ecr_i",
+      "efs",
+      "exec",
+      "finger",
+      "ftp",
+      "ftp_data",
+      "gopher",
+      "harvest",
+      "hostnames",
+      "http",
+      "http_2784",
+      "http_443",
+      "http_8001",
+      "icmp",
+      "imap4",
+      "IRC",
+      "iso_tsap",
+      "klogin",
+      "kshell",
+      "ldap",
+      "link",
+      "login",
+      "mtp",
+      "name",
+      "netbios_dgm",
+      "netbios_ns",
+      "netbios_ssn",
+      "netstat",
+      "nnsp",
+      "nntp",
+      "ntp_u",
+      "other",
+      "pm_dump",
+      "pop_2",
+      "pop_3",
+      "printer",
+      "private",
+      "red_i",
+      "remote_job",
+      "rje",
+      "shell",
+      "smtp",
+      "sql_net",
+      "ssh",
+      "sunrpc",
+      "supdup",
+      "systat",
+      "telnet",
+      "tftp_u",
+      "time",
+      "tim_i",
+      "urh_i",
+      "urp_i",
+      "uucp",
+      "uucp_path",
+      "vmnet",
+      "whois",
+      "X11",
+      "Z39_50",
     ]),
-  'flag':
+  "flag":
     _CATEGORICAL_TYPE([
-      'OTH',
-      'REJ',
-      'RSTO',
-      'RSTOS0',
-      'RSTR',
-      'S0',
-      'S1',
-      'S2',
-      'S3',
-      'SF',
-      'SH',
+      "OTH",
+      "REJ",
+      "RSTO",
+      "RSTOS0",
+      "RSTR",
+      "S0",
+      "S1",
+      "S2",
+      "S3",
+      "SF",
+      "SH",
     ]),
-  'src_bytes':
+  "src_bytes":
     _INT_TYPE,
-  'dst_bytes':
+  "dst_bytes":
     _INT_TYPE,
-  'land':
+  "land":
     _BOOL_TYPE,
-  'wrong_fragment':
+  "wrong_fragment":
     _INT_TYPE,
-  'urgent':
+  "urgent":
     _INT_TYPE,
-  'hot':
+  "hot":
     _INT_TYPE,
-  'num_failed_logins':
+  "num_failed_logins":
     _INT_TYPE,
-  'logged_in':
+  "logged_in":
     _BOOL_TYPE,
-  'num_compromised':
+  "num_compromised":
     _INT_TYPE,
-  'root_shell':
+  "root_shell":
     _BOOL_TYPE,
-  'su_attempted':
+  "su_attempted":
     _INT_TYPE,
-  'num_root':
+  "num_root":
     _INT_TYPE,
-  'num_file_creations':
+  "num_file_creations":
     _INT_TYPE,
-  'num_shells':
+  "num_shells":
     _INT_TYPE,
-  'num_access_files':
+  "num_access_files":
     _INT_TYPE,
-  'num_outbound_cmds':
+  "num_outbound_cmds":
     _INT_TYPE,
-  'is_hot_login':
+  "is_hot_login":
     _BOOL_TYPE,
-  'is_guest_login':
+  "is_guest_login":
     _BOOL_TYPE,
-  'count':
+  "count":
     _INT_TYPE,
-  'srv_count':
+  "srv_count":
     _INT_TYPE,
-  'serror_rate':
+  "serror_rate":
     _FLOAT_TYPE,
-  'srv_serror_rate':
+  "srv_serror_rate":
     _FLOAT_TYPE,
-  'rerror_rate':
+  "rerror_rate":
     _FLOAT_TYPE,
-  'srv_rerror_rate':
+  "srv_rerror_rate":
     _FLOAT_TYPE,
-  'same_srv_rate':
+  "same_srv_rate":
     _FLOAT_TYPE,
-  'diff_srv_rate':
+  "diff_srv_rate":
     _FLOAT_TYPE,
-  'srv_diff_host_rate':
+  "srv_diff_host_rate":
     _FLOAT_TYPE,
-  'dst_host_count':
+  "dst_host_count":
     _INT_TYPE,
-  'dst_host_srv_count':
+  "dst_host_srv_count":
     _INT_TYPE,
-  'dst_host_same_srv_rate':
+  "dst_host_same_srv_rate":
     _FLOAT_TYPE,
-  'dst_host_diff_srv_rate':
+  "dst_host_diff_srv_rate":
     _FLOAT_TYPE,
-  'dst_host_same_src_port_rate':
+  "dst_host_same_src_port_rate":
     _FLOAT_TYPE,
-  'dst_host_srv_diff_host_rate':
+  "dst_host_srv_diff_host_rate":
     _FLOAT_TYPE,
-  'dst_host_serror_rate':
+  "dst_host_serror_rate":
     _FLOAT_TYPE,
-  'dst_host_srv_serror_rate':
+  "dst_host_srv_serror_rate":
     _FLOAT_TYPE,
-  'dst_host_rerror_rate':
+  "dst_host_rerror_rate":
     _FLOAT_TYPE,
-  'dst_host_srv_rerror_rate':
+  "dst_host_srv_rerror_rate":
     _FLOAT_TYPE,
-  'label':
+  "label":
     _CATEGORICAL_TYPE([
-      'apache2.',
-      'back.',
-      'buffer_overflow.',
-      'ftp_write.',
-      'guess_passwd.',
-      'httptunnel.',
-      'imap.',
-      'ipsweep.',
-      'land.',
-      'loadmodule.',
-      'mailbomb.',
-      'mscan.',
-      'multihop.',
-      'named.',
-      'neptune.',
-      'nmap.',
-      'normal.',
-      'perl.',
-      'phf.',
-      'pod.',
-      'portsweep.',
-      'processtable.',
-      'ps.',
-      'rootkit.',
-      'saint.',
-      'satan.',
-      'sendmail.',
-      'smurf.',
-      'snmpgetattack.',
-      'snmpguess.',
-      'spy.',
-      'sqlattack.',
-      'teardrop.',
-      'udpstorm.',
-      'warezclient.',
-      'warezmaster.',
-      'worm.',
-      'xlock.',
-      'xsnoop.',
-      'xterm.',
+      "apache2.",
+      "back.",
+      "buffer_overflow.",
+      "ftp_write.",
+      "guess_passwd.",
+      "httptunnel.",
+      "imap.",
+      "ipsweep.",
+      "land.",
+      "loadmodule.",
+      "mailbomb.",
+      "mscan.",
+      "multihop.",
+      "named.",
+      "neptune.",
+      "nmap.",
+      "normal.",
+      "perl.",
+      "phf.",
+      "pod.",
+      "portsweep.",
+      "processtable.",
+      "ps.",
+      "rootkit.",
+      "saint.",
+      "satan.",
+      "sendmail.",
+      "smurf.",
+      "snmpgetattack.",
+      "snmpguess.",
+      "spy.",
+      "sqlattack.",
+      "teardrop.",
+      "udpstorm.",
+      "warezclient.",
+      "warezmaster.",
+      "worm.",
+      "xlock.",
+      "xsnoop.",
+      "xterm.",
     ]),
 }

@@ -5,15 +5,15 @@ from ...datasets import common as ds_common
 FLAGS = flags.FLAGS
 
 flags.DEFINE_string(
-  'dataset',
-  default='MillimanDataset',
-  help='Dataset to use',
+  "dataset",
+  default="MillimanDataset",
+  help="Dataset to use",
 )
 
 flags.DEFINE_string(
-  'train_name',
-  default='train',
-  help='Name of the train config',
+  "train_name",
+  default="train",
+  help="Name of the train config",
 )
 
 

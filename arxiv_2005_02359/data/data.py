@@ -7,33 +7,34 @@ from ..transform import transform
 FLAGS = flags.FLAGS
 
 flags.DEFINE_string(
-  'dataset',
-  default='KddCup99',
-  help='Dataset to use',
+  "dataset",
+  default="KddCup99",
+  help="Dataset to use",
 )
 flags.DEFINE_string(
-  'train_name',
-  default='train',
-  help='Name of the train config',
+  "train_name",
+  default="train",
+  help="Name of the train config",
 )
 
 flags.DEFINE_string(
-  'test_name',
-  default='test',
-  help='Name of the test config',
+  "test_name",
+  default="test",
+  help="Name of the test config",
 )
 
 flags.DEFINE_integer(
-  'normal',
+  "normal",
   default=1,
-  help='Normal label',
+  help="Normal label",
 )
 
 flags.DEFINE_integer(
-  'shuffle_buffer', 1024, 'Shuffle buffer size.', lower_bound=1)
+  "shuffle_buffer", 1024, "Shuffle buffer size.", lower_bound=1
+)
 
-flags.DEFINE_integer('batch_size', 128, 'Batch size.', lower_bound=1)
-flags.DEFINE_string('cache', '', 'Cache file for datasets.')
+flags.DEFINE_integer("batch_size", 128, "Batch size.", lower_bound=1)
+flags.DEFINE_string("cache", "", "Cache file for datasets.")
 
 
 def filter_normal(x, y):
@@ -46,15 +47,17 @@ def filter_anomalous(x, y):
 
 
 def split_normal_anomalous(ds, cache: bool = False):
-  normal = ds\
-    .filter(filter_normal)\
-    .shuffle(FLAGS.shuffle_buffer)\
-    .batch(FLAGS.batch_size, drop_remainder=True)
+  normal = (
+    ds.filter(filter_normal).shuffle(
+      FLAGS.shuffle_buffer
+    ).batch(FLAGS.batch_size, drop_remainder=True)
+  )
 
-  anomalous = ds\
-    .filter(filter_anomalous)\
-    .shuffle(FLAGS.shuffle_buffer)\
-    .batch(FLAGS.batch_size, drop_remainder=True)
+  anomalous = (
+    ds.filter(filter_anomalous).shuffle(
+      FLAGS.shuffle_buffer
+    ).batch(FLAGS.batch_size, drop_remainder=True)
+  )
 
   if cache:
     normal = normal.cache()
@@ -64,8 +67,9 @@ def split_normal_anomalous(ds, cache: bool = False):
 
 def get_datasets():
 
-  train, test = ds_common.load_dataset(FLAGS.dataset, FLAGS.train_name,
-                                       FLAGS.test_name)
+  train, test = ds_common.load_dataset(
+    FLAGS.dataset, FLAGS.train_name, FLAGS.test_name
+  )
 
   train_normal, train_anomalous = split_normal_anomalous(train)
   test_normal, test_anomalous = split_normal_anomalous(test)
@@ -82,7 +86,7 @@ def get_datasets():
 
   def prepare_dataset(ds):
     ds = ds.flat_map(apply_transforms)
-    if FLAGS.cache.lower() != 'none':
+    if FLAGS.cache.lower() != "none":
       ds = ds.cache(FLAGS.cache)
 
     # Perfectly balanced batch
