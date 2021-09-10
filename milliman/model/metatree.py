@@ -4,7 +4,7 @@ from typing import Callable
 import tensorflow as tf
 import tensorflow_addons as tfa
 
-L2 = 1e-4
+L2 = 1e-3
 L1 = 1e-4
 
 
@@ -164,6 +164,7 @@ def gen_inner_model(*, input_dim: int, emb_dim: int) -> tf.keras.Model:
     input_dim,
     bias_initializer="ones",
     kernel_regularizer=tf.keras.regularizers.L1L2(L1, L2),
+    activation="relu"
   )(
     h
   )
@@ -212,6 +213,7 @@ def build_tree(
   proba_reg_reduction_factor: float = 1.0,
   root_id: int = 0,
 ):
+
   if depth == 1:
     return LeafNode(leaf_model_fn, root_id)
 
