@@ -4,6 +4,9 @@ from typing import Callable
 import tensorflow as tf
 import tensorflow_addons as tfa
 
+L2 = 1e-4
+L1 = 1e-4
+
 
 class TreeModel(tf.keras.Model):
   """Class representing an entire tree"""
@@ -112,25 +115,50 @@ def gen_input_encoder(
   return tf.keras.Sequential([
     tf.keras.layers.InputLayer(input_shape=(input_dim,)),
     tf.keras.layers.GaussianNoise(0.25),
-    tf.keras.layers.Dense(emb_dim, activation='relu'),
-    tf.keras.layers.Dense(emb_dim, activation='relu'),
-    tf.keras.layers.Dense(emb_dim, activation='relu'),
-    tf.keras.layers.Dense(emb_dim, activation='relu'),
+    tf.keras.layers.Dense(
+      emb_dim,
+      activation='relu',
+      kernel_regularizer=tf.keras.regularizers.L1L2(L1, L2)),
+    tf.keras.layers.Dense(
+      emb_dim,
+      activation='relu',
+      kernel_regularizer=tf.keras.regularizers.L1L2(L1, L2)),
+    tf.keras.layers.Dense(
+      emb_dim,
+      activation='relu',
+      kernel_regularizer=tf.keras.regularizers.L1L2(L1, L2)),
+    tf.keras.layers.Dense(
+      emb_dim,
+      activation='relu',
+      kernel_regularizer=tf.keras.regularizers.L1L2(L1, L2)),
     tf.keras.layers.Dropout(0.5),
   ])
 
 
 def gen_inner_model(*, input_dim: int, emb_dim: int) -> tf.keras.Model:
   emb = tf.keras.Input(shape=(emb_dim,))
-  h = tf.keras.layers.Dense(emb_dim, activation='relu')(emb)
-  w = tf.keras.layers.Dense(input_dim, bias_initializer='ones')(h)
+  h = tf.keras.layers.Dense(
+    emb_dim,
+    activation='relu',
+    kernel_regularizer=tf.keras.regularizers.L1L2(L1, L2))(
+      emb)
+  w = tf.keras.layers.Dense(
+    input_dim,
+    bias_initializer='ones',
+    kernel_regularizer=tf.keras.regularizers.L1L2(L1, L2))(
+      h)
   w /= tf.math.reduce_max(w, axis=1, keepdims=True)
   w = tfa.activations.hardshrink(w, lower=0, upper=0.6)
   w = tfa.activations.sparsemax(w)
 
-  b = tf.keras.layers.Dense(1, activation='tanh')(h)
+  b = tf.keras.layers.Dense(
+    1, activation='tanh', kernel_regularizer=tf.keras.regularizers.L1L2(L1,
+                                                                        L2))(
+                                                                          h)
 
-  beta = tf.keras.layers.Dense(1)(h)
+  beta = tf.keras.layers.Dense(
+    1, kernel_regularizer=tf.keras.regularizers.L1L2(L1, L2))(
+      h)
 
   return tf.keras.Model(inputs=emb, outputs=[w, b, beta])
 
@@ -138,8 +166,14 @@ def gen_inner_model(*, input_dim: int, emb_dim: int) -> tf.keras.Model:
 def gen_leaf_model(emb_dim: int) -> tf.keras.Model:
   return tf.keras.Sequential([
     tf.keras.layers.InputLayer(input_shape=(emb_dim,)),
-    tf.keras.layers.Dense(emb_dim, activation='relu'),
-    tf.keras.layers.Dense(1, activation='sigmoid'),
+    tf.keras.layers.Dense(
+      emb_dim,
+      activation='relu',
+      kernel_regularizer=tf.keras.regularizers.L1L2(L1, L2)),
+    tf.keras.layers.Dense(
+      1,
+      activation='sigmoid',
+      kernel_regularizer=tf.keras.regularizers.L1L2(L1, L2)),
   ])
 
 
