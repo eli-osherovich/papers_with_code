@@ -150,12 +150,13 @@ def gen_inner_model(*, input_dim: int, emb_dim: int) -> tf.keras.Model:
   w /= tf.math.reduce_max(w, axis=1, keepdims=True)
   w = tfa.activations.hardshrink(w, lower=0, upper=0.6)
   w = tfa.activations.sparsemax(w)
+  w /= tf.math.reduce_max(w, axis=1, keepdims=True)
 
   b = tf.keras.layers.Dense(
     1, activation='tanh', kernel_regularizer=tf.keras.regularizers.L1L2(L1,
                                                                         L2))(
                                                                           h)
-
+  # TODO: add true b's bounds:
   beta = tf.keras.layers.Dense(
     1, kernel_regularizer=tf.keras.regularizers.L1L2(L1, L2))(
       h)
