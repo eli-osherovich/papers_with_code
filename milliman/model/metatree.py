@@ -178,6 +178,8 @@ def gen_inner_model(*, input_dim: int, emb_dim: int) -> tf.keras.Model:
   )
   # TODO: add true b's bounds:
   # to this end, we might try different b per feature.
+
+  # TODO: consider constnt beta.
   beta = tf.keras.layers.Dense(
     1, kernel_regularizer=tf.keras.regularizers.L1L2(L1, L2)
   )(
