@@ -60,8 +60,9 @@ def make_divisible(q, values, dtype=None):
 
 
 def setup_omp():
-  """Optimize environment for multi-core machines"""
-  """A set of setting that should optimize multi-core environments.
+  """Optimize environment for multi-core machines
+
+  A set of setting that should optimize multi-core environments.
   See following references:
   https://software.intel.com/content/www/us/en/develop/articles/tips-to-improve-performance-for-popular-deep-learning-frameworks-on-multi-core-cpus.html
   https://software.intel.com/content/www/us/en/develop/articles/maximize-tensorflow-performance-on-cpu-considerations-and-recommendations-for-inference.html
