@@ -7,7 +7,7 @@ tree_model.get_model.leaf_initializer = -0.8472978603872037  # log(3/7)
 
 # MetaTree model
 metatree_model.get_model.depth=3
-metatree_model.get_model.input_dim=42
+metatree_model.get_model.input_dim=43
 metatree_model.get_model.emb_dim=512
 
 
