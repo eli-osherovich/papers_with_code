@@ -32,12 +32,6 @@ def train():
 
   m = model.get_model(n_transforms)
 
-  m.compile(
-    optimizer="adam",
-    loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-    metrics=[tf.keras.metrics.SparseCategoricalAccuracy(name="accuracy")],
-  )
-
   m.fit(
     train_normal,
     epochs=FLAGS.epochs,

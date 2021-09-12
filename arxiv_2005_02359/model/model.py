@@ -23,4 +23,11 @@ def get_model(n_classes):
   for _ in range(FLAGS.n_layers):
     model.add(tf.keras.layers.Dense(FLAGS.layer_dim, activation="relu"))
   model.add(tf.keras.layers.Dense(n_classes))
+
+  model.compile(
+    optimizer=tf.keras.optimizers.Adam(),
+    loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+    metrics=[tf.keras.metrics.SparseCategoricalAccuracy(name="accuracy")],
+  )
+
   return model
