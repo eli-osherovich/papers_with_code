@@ -90,7 +90,9 @@ class InnerNode(tf.keras.layers.Layer):
       # Bookeeping for tree printing.
       # Split by one feature only: the one that results in the largest logit.
       self.split_feature_idx = w_max_idx
-      self.threshold = -tf.squeeze(b) / tf.gather(
+      self.threshold = -tf.gather(
+        b, w_max_idx, batch_dims=1, axis=1
+      ) / tf.gather(
         w, self.split_feature_idx, batch_dims=1, axis=1
       )
 
@@ -102,7 +104,7 @@ class InnerNode(tf.keras.layers.Layer):
       self.x = tf.gather(x, w_max_idx, batch_dims=1, axis=1)
       self.w = tf.gather(w, w_max_idx, batch_dims=1, axis=1)
       self.ww = w
-      self.b = tf.squeeze(b)
+      self.b = tf.gather(b, w_max_idx, batch_dims=1, axis=1)
       self.proba_right = tf.squeeze(proba_right)
 
     mask_right = tf.math.logical_and(mask, proba_right >= 0.5)
@@ -174,7 +176,9 @@ def gen_inner_model(*, input_dim: int, emb_dim: int) -> tf.keras.Model:
   w /= tf.math.reduce_max(w, axis=1, keepdims=True)
 
   b = tf.keras.layers.Dense(
-    1, activation="tanh", kernel_regularizer=tf.keras.regularizers.L1L2(L1, L2)
+    input_dim,
+    kernel_regularizer=tf.keras.regularizers.L1L2(L1, L2),
+    activation="tanh"
   )(
     h
   )
