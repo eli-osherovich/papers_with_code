@@ -193,7 +193,10 @@ def print_tree(model, ds):
       "ww",
     ]:
       if hasattr(node, a):
-        res[a] = getattr(node, a).numpy().tolist()
+        try:
+          res[a] = getattr(node, a).numpy().tolist()
+        except AttributeError:
+          res[a] = getattr(node, a)
     nodes.append(res)
     if hasattr(node, "left"):
       _add_node(node.left)

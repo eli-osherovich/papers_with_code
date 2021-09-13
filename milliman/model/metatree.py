@@ -31,7 +31,7 @@ class TreeModel(tf.keras.Model):
 class LeafNode(tf.keras.layers.Layer):
   """Class represanting leaf nodes"""
 
-  def __init__(self, model_fn: Callable[[], tf.keras.Model], id_: int = 0):
+  def __init__(self, *, model_fn: Callable[[], tf.keras.Model], id_: int = 0):
     super().__init__()
     self.id = id_
     self.model = model_fn()
@@ -48,20 +48,23 @@ class InnerNode(tf.keras.layers.Layer):
 
   def __init__(
     self,
+    *,
     model_fn: Callable[[], tf.keras.Model],
     proba_reg_weight: float,
+    beta: float,
     id_: int = 0,
   ) -> None:
     super().__init__()
     self.model = model_fn()
     self.proba_reg_weight = proba_reg_weight
+    self.beta = beta
     self.id = id_
 
   def call(self, inputs, *, training=None, mask=None):
     x, emb = inputs
-    w, b, beta = self.model(emb)
+    w, b = self.model(emb)
 
-    logits = beta * (w * x + b)
+    logits = self.beta * (w * x + b)
 
     w_max_idx = tf.math.argmax(w, axis=1)
 
@@ -94,12 +97,11 @@ class InnerNode(tf.keras.layers.Layer):
       # Depending on the sing of beta, the inequality may be either:
       # 1. geq (>=)
       # 2. leq (<=)
-      self.geq = tf.squeeze(beta >= 0)
+      self.geq = self.beta >= 0
 
       self.x = tf.gather(x, w_max_idx, batch_dims=1, axis=1)
       self.w = tf.gather(w, w_max_idx, batch_dims=1, axis=1)
       self.ww = w
-      self.beta = tf.squeeze(beta)
       self.b = tf.squeeze(b)
       self.proba_right = tf.squeeze(proba_right)
 
@@ -179,14 +181,7 @@ def gen_inner_model(*, input_dim: int, emb_dim: int) -> tf.keras.Model:
   # TODO: add true b's bounds:
   # to this end, we might try different b per feature.
 
-  # TODO: consider constnt beta.
-  beta = tf.keras.layers.Dense(
-    1, kernel_regularizer=tf.keras.regularizers.L1L2(L1, L2)
-  )(
-    h
-  )
-
-  return tf.keras.Model(inputs=emb, outputs=[w, b, beta])
+  return tf.keras.Model(inputs=emb, outputs=[w, b])
 
 
 def gen_leaf_model(emb_dim: int) -> tf.keras.Model:
@@ -212,13 +207,19 @@ def build_tree(
   leaf_model_fn: Callable[[], tf.keras.Model],
   proba_reg_weight: float = 0.5,
   proba_reg_reduction_factor: float = 1.0,
+  beta=10.0,
   root_id: int = 0,
 ):
 
   if depth == 1:
-    return LeafNode(leaf_model_fn, root_id)
+    return LeafNode(model_fn=leaf_model_fn, id_=root_id)
 
-  root = InnerNode(inner_model_fn, proba_reg_weight, root_id)
+  root = InnerNode(
+    model_fn=inner_model_fn,
+    proba_reg_weight=proba_reg_weight,
+    beta=beta,
+    id_=root_id
+  )
 
   root.left = build_tree(
     depth=depth - 1,
