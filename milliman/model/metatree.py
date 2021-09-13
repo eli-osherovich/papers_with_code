@@ -23,9 +23,8 @@ class TreeModel(tf.keras.Model):
     )
 
   def call(self, x):
-    mask = tf.ones(shape=(x.shape[0], 1), dtype=tf.bool)
     emb = self.encoder(x)
-    return self.tree((x, emb), mask=mask)
+    return self.tree((x, emb))
 
 
 class LeafNode(tf.keras.layers.Layer):
@@ -36,9 +35,9 @@ class LeafNode(tf.keras.layers.Layer):
     self.id = id_
     self.model = model_fn()
 
-  def call(self, inputs, *, mask=None):
+  def call(self, inputs):
     x, emb = inputs
-    del x, mask  # unused
+    del x  # unused
     self.value = self.model(emb)
     return self.value
 
@@ -60,7 +59,7 @@ class InnerNode(tf.keras.layers.Layer):
     self.beta = beta
     self.id = id_
 
-  def call(self, inputs, *, training=None, mask=None):
+  def call(self, inputs, *, training=None):
     x, emb = inputs
     w, b = self.model(emb)
 
@@ -69,7 +68,7 @@ class InnerNode(tf.keras.layers.Layer):
     w_max_idx = tf.math.argmax(w, axis=1)
 
     # Use only one feature as we do during inference.
-    proba_right = tf.nn.sigmoid(
+    p_right = tf.nn.sigmoid(
       tf.gather(logits, w_max_idx, batch_dims=1, axis=1)[..., None]
     )
 
@@ -77,15 +76,14 @@ class InnerNode(tf.keras.layers.Layer):
       # We do not use this loss for evaluation (hence, for monitoring either)
       self.add_loss(
         self.proba_reg_weight *
-        tf.keras.losses.binary_crossentropy([0.5],
-                                            tf.math.reduce_mean(proba_right))
+        tf.keras.losses.binary_crossentropy([0.5], tf.math.reduce_mean(p_right))
       )
     else:
       # During inference the behavior is different in this aspect:
       # 1. The system uses hard decision trees.
 
       # Hard decision tree.
-      proba_right = tf.where(proba_right >= 0.5, 1.0, 0.0)
+      p_right = tf.where(p_right >= 0.5, 1.0, 0.0)
 
       # Bookeeping for tree printing.
       # Split by one feature only: the one that results in the largest logit.
@@ -105,21 +103,9 @@ class InnerNode(tf.keras.layers.Layer):
       self.w = tf.gather(w, w_max_idx, batch_dims=1, axis=1)
       self.ww = w
       self.b = tf.gather(b, w_max_idx, batch_dims=1, axis=1)
-      self.proba_right = tf.squeeze(proba_right)
+      self.proba_right = tf.squeeze(p_right)
 
-    mask_right = tf.math.logical_and(mask, proba_right >= 0.5)
-    mask_left = tf.math.logical_and(mask, proba_right < 0.5)
-    emb_right = tf.cast(mask_right, emb.dtype) * emb
-    emb_left = tf.cast(mask_left, emb.dtype) * emb
-    # tf.print(
-    #   self.id,
-    #   tf.math.count_nonzero(mask),
-    #   tf.math.count_nonzero(mask_left),
-    #   tf.math.count_nonzero(mask_right),
-    # )
-    return (1 - proba_right) * self.left(
-      (x, emb_left), mask=mask_left
-    ) + proba_right * self.right((x, emb_right), mask=mask_right)
+    return (1 - p_right) * self.left(inputs) + p_right * self.right(inputs)
 
 
 def gen_input_encoder(
