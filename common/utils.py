@@ -1,5 +1,4 @@
 import os
-from typing import Optional
 
 from absl import logging
 import numpy as np
@@ -71,9 +70,9 @@ def setup_omp():
   num_threads = psutil.cpu_count(logical=True)
   os.environ["KMP_AFFINITY"] = "granularity=fine,compact,1,0"
   os.environ["KMP_BLOCKTIME"] = "0"
-  os.environ["OMP_DYNAMIC"] = "TRUE"
+  # os.environ["OMP_DYNAMIC"] = "true" # For some reason, this flag ruins convergence (see https://github.com/tensorflow/tensorflow/issues/51970)
   os.environ["OMP_NUM_THREADS"] = str(num_cores)
-  os.environ["OMP_SCHEDULE"] = "DYNAMIC"
+  os.environ["OMP_SCHEDULE"] = "dynamic"
   # tf.config.threading.set_intra_op_parallelism_threads(num_cores)
   tf.config.threading.set_inter_op_parallelism_threads(num_threads)
 
