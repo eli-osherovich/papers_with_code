@@ -19,7 +19,9 @@ class TreeModel(tf.keras.Model):
       inner_model_fn=functools.partial(
         gen_inner_model, input_dim=input_dim, emb_dim=emb_dim
       ),
-      leaf_model_fn=functools.partial(gen_leaf_model, emb_dim=emb_dim),
+      leaf_model_fn=functools.partial(
+        gen_leaf_model, input_dim=input_dim, emb_dim=emb_dim
+      ),
     )
 
   def call(self, x):
@@ -36,9 +38,7 @@ class LeafNode(tf.keras.layers.Layer):
     self.model = model_fn()
 
   def call(self, inputs):
-    x, emb = inputs
-    del x  # unused
-    self.value = self.model(emb)
+    self.value = self.model(inputs)
     return self.value
 
 
@@ -61,7 +61,8 @@ class InnerNode(tf.keras.layers.Layer):
 
   def call(self, inputs, *, training=None):
     x, emb = inputs
-    w, b = self.model(emb)
+    del emb  # unused
+    w, b = self.model(inputs)
 
     logits = self.beta * (w * x + b)
 
@@ -141,13 +142,19 @@ def gen_input_encoder(
 
 
 def gen_inner_model(*, input_dim: int, emb_dim: int) -> tf.keras.Model:
+  # X and EMB are combined via ResNet-like style:
+  # 1. x is casted to the same dimension as emb (via matrix multiplication)
+  # 2. they are summed.
+  x = tf.keras.Input(shape=(input_dim,))
   emb = tf.keras.Input(shape=(emb_dim,))
+  h = tf.keras.layers.Dense(emb_dim, use_bias=False)(x)
+  h = h + emb
   h = tf.keras.layers.Dense(
     emb_dim,
     activation="relu",
     kernel_regularizer=tf.keras.regularizers.L1L2(L1, L2),
   )(
-    emb
+    h
   )
   w = tf.keras.layers.Dense(
     input_dim,
@@ -171,23 +178,32 @@ def gen_inner_model(*, input_dim: int, emb_dim: int) -> tf.keras.Model:
   # TODO: add true b's bounds:
   # to this end, we might try different b per feature.
 
-  return tf.keras.Model(inputs=emb, outputs=[w, b])
+  return tf.keras.Model(inputs=(x, emb), outputs=(w, b))
 
 
-def gen_leaf_model(emb_dim: int) -> tf.keras.Model:
-  return tf.keras.Sequential([
-    tf.keras.layers.InputLayer(input_shape=(emb_dim,)),
-    tf.keras.layers.Dense(
-      emb_dim,
-      activation="relu",
-      kernel_regularizer=tf.keras.regularizers.L1L2(L1, L2),
-    ),
-    tf.keras.layers.Dense(
-      1,
-      activation="sigmoid",
-      kernel_regularizer=tf.keras.regularizers.L1L2(L1, L2),
-    ),
-  ])
+def gen_leaf_model(*, input_dim: int, emb_dim: int) -> tf.keras.Model:
+  # X and EMB are combined via ResNet-like style:
+  # 1. x is casted to the same dimension as emb (via matrix multiplication)
+  # 2. they are summed.
+  x = tf.keras.Input(shape=(input_dim,))
+  emb = tf.keras.Input(shape=(emb_dim,))
+  h = tf.keras.layers.Dense(emb_dim, use_bias=False)(x)
+  h = h + emb
+  h = tf.keras.layers.Dense(
+    emb_dim,
+    activation="relu",
+    kernel_regularizer=tf.keras.regularizers.L1L2(L1, L2),
+  )(
+    h
+  )
+  h = tf.keras.layers.Dense(
+    1,
+    activation="sigmoid",
+    kernel_regularizer=tf.keras.regularizers.L1L2(L1, L2),
+  )(
+    h
+  )
+  return tf.keras.Model(inputs=(x, emb), outputs=h)
 
 
 def build_tree(
