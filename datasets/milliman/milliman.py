@@ -57,7 +57,4 @@ class MillimanDataset2(MillimanDataset):
     }).astype(float)
     X = X.fillna(X.median())
     X = pd.get_dummies(X, prefix_sep="__:__")
-
-    print("cols=", X.columns)
-
     return X, y
