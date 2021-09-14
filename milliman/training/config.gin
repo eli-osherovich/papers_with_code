@@ -25,7 +25,7 @@ tree_fit_params = {
 
 metatree_fit_params = {
   'epochs': 10000,
-  'patience': 100,
+  'patience': 300,
   'verbose': 1,
   'scale_pos_weight': 1.0420,
 }
