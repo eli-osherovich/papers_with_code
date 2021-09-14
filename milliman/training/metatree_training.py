@@ -152,9 +152,6 @@ def _prepare_datasets(X_train, y_train, X_val, y_val, batch_size):
   pt = StandardScaler()
   pt.fit(X_train)
 
-  print(f"scale={pt.scale_.tolist()}")
-  print(f"mean={pt.mean_.tolist()}")
-
   X_train = pt.transform(X_train)
   X_val = pt.transform(X_val)
 
