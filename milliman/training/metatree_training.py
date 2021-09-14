@@ -155,12 +155,15 @@ def _prepare_datasets(X_train, y_train, X_val, y_val, batch_size):
   pt.fit(X_train)
 
   ds_data = {}
-  ds_data["mean"] = pt.mean_.astype(float).tolist()
-  ds_data["std"] = pt.scale_.astype(float).tolist()
-  ds_data["min"] = X_train.min().values.astype(float).tolist()
-  ds_data["max"] = X_train.max().values.astype(float).tolist()
+  ds_data["mean"] = pt.mean_
+  ds_data["std"] = pt.scale_
+  ds_data["min"] = X_train.min().values
+  ds_data["max"] = X_train.max().values
+  ds_data["b_lo"] = (ds_data["mean"] - ds_data["max"]) / ds_data["std"]
+  ds_data["b_hi"] = (ds_data["mean"] - ds_data["min"]) / ds_data["std"]
+
   with open("/tmp/dataset.json", "w") as f:
-    json.dump(ds_data, f)
+    json.dump({k: v.astype(float).tolist() for k, v in ds_data.items()}, f)
 
   X_train = pt.transform(X_train)
   X_val = pt.transform(X_val)
@@ -178,8 +181,6 @@ def _prepare_datasets(X_train, y_train, X_val, y_val, batch_size):
 
 
 def print_tree(model, ds):
-  import json
-
   model.run_eagerly = True
   model.predict(ds)
 
