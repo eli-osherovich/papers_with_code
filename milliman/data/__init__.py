@@ -1,1 +1,1 @@
-from .data import get_numpy  # noqa F401.
+from .data import get_numpy, get_dataframe  # noqa F401.

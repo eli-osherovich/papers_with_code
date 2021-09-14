@@ -19,3 +19,7 @@ flags.DEFINE_string(
 
 def get_numpy():
   return ds_common.load_numpy(FLAGS.dataset, FLAGS.train_name)
+
+
+def get_dataframe():
+  return ds_common.load_dataframe(FLAGS.dataset, FLAGS.train_name)
