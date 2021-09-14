@@ -1,3 +1,5 @@
+import json
+
 import gin
 import numpy as np
 import ray.tune
@@ -151,6 +153,14 @@ def tune(
 def _prepare_datasets(X_train, y_train, X_val, y_val, batch_size):
   pt = StandardScaler()
   pt.fit(X_train)
+
+  ds_data = {}
+  ds_data["mean"] = pt.mean_.astype(float).tolist()
+  ds_data["std"] = pt.scale_.astype(float).tolist()
+  ds_data["min"] = X_train.min().values.astype(float).tolist()
+  ds_data["max"] = X_train.max().values.astype(float).tolist()
+  with open("/tmp/dataset.json", "w") as f:
+    json.dump(ds_data, f)
 
   X_train = pt.transform(X_train)
   X_val = pt.transform(X_val)

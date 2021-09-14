@@ -1,4 +1,7 @@
+import json
+
 from absl import flags
+import numpy as np
 
 from . import metatree_training
 from . import tree_training
@@ -36,7 +39,14 @@ def _get_model_module():
 
 
 def train():
-  X, y = data.get_numpy()
+  X, y = data.get_dataframe()
+  ds_data = {}
+  ds_data["cols"] = X.columns.tolist()
+  with open("/tmp/dataset_columns.json", "w") as f:
+    json.dump(ds_data, f)
+
+  X.to_numpy(dtype=np.float32)
+  y = y.to_numpy(dtype=np.float32)
 
   model_module = _get_model_module()
   action = _get_action()
