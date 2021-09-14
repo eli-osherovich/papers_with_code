@@ -13,7 +13,6 @@ class Dataset:
     self._target_columns = target_columns
     self._df_args = df_args or {}
 
-
   @property
   def cls_package(self):
     return self.__module__.rsplit(".", 1)[0]
@@ -44,6 +43,11 @@ class Dataset:
     return squeeze(res)
 
   def _generate_dataframe(self, split_name):
+    X, y = self._read_df(split_name)
+    X = pd.get_dummies(X, prefix_sep="__:__")
+    return X, y
+
+  def _read_df(self, split_name):
     ds_path = self.download_dataset(split_name)
     file_accessor = io.FileAccessor(ds_path)
     file_reader = io.PandasCSVReader(
@@ -52,7 +56,6 @@ class Dataset:
     X = file_accessor.read(file_reader)
     y = X[self._target_columns]
     X = X.drop(self._target_columns, axis=1)
-    X = pd.get_dummies(X, prefix_sep="__:__")
     return X, y
 
   def _generate_numpy(self, split_name):
