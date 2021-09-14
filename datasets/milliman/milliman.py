@@ -55,6 +55,6 @@ class MillimanDataset2(MillimanDataset):
       "4 - 7 years": 7,
       "> 7 years": 10
     }).astype(float)
-    X = X.fillna(X.median())
+    X = X.fillna(X.median(numeric_only=True))
     X = pd.get_dummies(X, prefix_sep="__:__")
     return X, y
