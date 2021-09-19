@@ -5,8 +5,8 @@ from typing import Any, Callable
 import tensorflow as tf
 import tensorflow_addons as tfa
 
-L2 = 1e-2
-L1 = 1e-3 * 0
+L2 = 5e-4
+L1 = 5e-4
 
 _B_LO = tf.constant([
   -2.2338567283409025, -3.321779081441261, -2.7279813295174837,
