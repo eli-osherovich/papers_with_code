@@ -195,8 +195,10 @@ def gen_inner_model(
   )(
     h
   )
+  # w /= tf.math.reduce_max(w, axis=1, keepdims=True)
+  # w = tfa.activations.sparsemax(w)
   w /= tf.math.reduce_max(w, axis=1, keepdims=True)
-  w = tfa.activations.sparsemax(w)
+  w = tf.math.pow(w, 20)
   w /= tf.math.reduce_max(w, axis=1, keepdims=True)
 
   b = tf.keras.layers.Dense(
