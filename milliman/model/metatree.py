@@ -101,13 +101,13 @@ class InnerNode(tf.keras.layers.Layer):
     p_right = tf.nn.sigmoid(
       tf.gather(logits, w_max_idx, batch_dims=1, axis=1)[..., None]
     )
-
     if training:
       # We do not use this loss for evaluation (hence, for monitoring either)
       self.add_loss(
         self.proba_reg_weight *
         tf.keras.losses.binary_crossentropy([0.5], tf.math.reduce_mean(p_right))
       )
+      self.add_loss(1e-4 * tf.keras.regularizers.l1_l2(l1=L1, l2=L2)(w))
     else:
       # During inference the behavior is different in this aspect:
       # 1. The system uses hard decision trees.
