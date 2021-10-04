@@ -30,7 +30,7 @@ class Movielens(dataset.Dataset):
   def _generate_dataframe(self, split_name):
     if split_name != self._flavor:
       raise AssertionError(
-        f"split_name must be {self._flavor}, called with {split_name}"
+        f"split_name must be `{self._flavor}`, called with `{split_name}`"
       )
 
     ratings = self.ratings()
