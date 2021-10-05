@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 import functools
-from typing import Any, Callable
+from typing import Any, Callable, Union
 
 import tensorflow as tf
 import tensorflow_addons as tfa
@@ -8,6 +8,7 @@ import tensorflow_addons as tfa
 L2 = 5e-4
 L1 = 5e-4
 
+VECTOR = Sequence[float]
 _B_LO = tf.constant([
   -2.2338567283409025, -3.321779081441261, -2.7279813295174837,
   -4.773952579363098, -3.248870315174375, -1.3781703984907252,
@@ -37,7 +38,15 @@ _B_HI = tf.constant([
 class TreeModel(tf.keras.Model):
   """Class representing an entire tree"""
 
-  def __init__(self, *, depth: int, input_dim: int, emb_dim: int) -> None:
+  def __init__(
+    self,
+    *,
+    depth: int,
+    input_dim: int,
+    emb_dim: int,
+    b_lo: Union[float, VECTOR] = -1.0,
+    b_hi: Union[float, VECTOR] = 1.0
+  ) -> None:
     super().__init__()
     self.encoder = gen_input_encoder(input_dim=input_dim, emb_dim=emb_dim)
     self.tree = build_tree(
@@ -46,7 +55,7 @@ class TreeModel(tf.keras.Model):
         gen_inner_model,
         input_dim=input_dim,
         emb_dim=emb_dim,
-        blimits=(_B_LO, _B_HI)
+        b_limits=(_B_LO, _B_HI)
       ),
       leaf_model_fn=functools.partial(
         gen_leaf_model, input_dim=input_dim, emb_dim=emb_dim
@@ -63,7 +72,7 @@ class LeafNode(tf.keras.layers.Layer):
 
   def __init__(self, *, model_fn: Callable[[], tf.keras.Model], id_: int = 0):
     super().__init__()
-    self.id = id_
+    self.id = tf.constant(id_)
     self.model = model_fn()
 
   def call(self, inputs):
@@ -84,9 +93,9 @@ class InnerNode(tf.keras.layers.Layer):
   ) -> None:
     super().__init__()
     self.model = model_fn()
-    self.proba_reg_weight = proba_reg_weight
-    self.beta = beta
-    self.id = id_
+    self.proba_reg_weight = tf.constant(proba_reg_weight)
+    self.beta = tf.constant(beta)
+    self.id = tf.constant(id_)
 
   def call(self, inputs, *, training=None):
     x, emb = inputs
@@ -113,6 +122,8 @@ class InnerNode(tf.keras.layers.Layer):
       # 1. The system uses hard decision trees.
 
       # Hard decision tree.
+      self.proba_right_orig = tf.squeeze(p_right)
+
       p_right = tf.where(p_right >= 0.5, 1.0, 0.0)
 
       # Bookeeping for tree printing.
@@ -171,7 +182,7 @@ def gen_input_encoder(
 
 
 def gen_inner_model(
-  *, input_dim: int, emb_dim: int, blimits: Sequence[Any, Any]
+  *, input_dim: int, emb_dim: int, b_limits: Sequence[VECTOR, VECTOR]
 ) -> tf.keras.Model:
   # X and EMB are combined via ResNet-like style:
   # 1. x is casted to the same dimension as emb (via matrix multiplication)
@@ -208,8 +219,8 @@ def gen_inner_model(
   )(
     h
   )
-  lo, hi = blimits
-  b = b * (hi - lo) / 2 + (hi + lo) / 2
+  b_lo, b_hi = b_limits
+  b = (b_hi - b_lo) / 2 * b + (b_hi + b_lo) / 2
 
   return tf.keras.Model(inputs=(x, emb), outputs=(w, b))
 

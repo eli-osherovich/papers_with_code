@@ -187,7 +187,7 @@ def print_tree(model, ds):
   nodes = []
 
   def _add_node(node):
-    res = {"id": node.id}
+    res = {"id": int(node.id.numpy())}
     for a in [
       "value",
       "x",
@@ -198,6 +198,7 @@ def print_tree(model, ds):
       "split_feature_idx",
       "geq",
       "proba_right",
+      "proba_right_orig",
       "ww",
     ]:
       if hasattr(node, a):
