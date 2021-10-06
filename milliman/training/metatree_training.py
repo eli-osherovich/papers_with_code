@@ -187,7 +187,7 @@ def print_tree(model, ds):
   nodes = []
 
   def _add_node(node):
-    res = {"id": int(node.id.numpy())}
+    res = {"id": node.id}
     for a in [
       "value",
       "x",

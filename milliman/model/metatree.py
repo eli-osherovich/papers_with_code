@@ -37,7 +37,7 @@ class LeafNode(tf.keras.layers.Layer):
 
   def __init__(self, *, model_fn: Callable[[], tf.keras.Model], id_: int = 0):
     super().__init__()
-    self.id = tf.constant(id_)
+    self.id = id_
     self.model = model_fn()
 
   def call(self, inputs):
@@ -58,9 +58,9 @@ class InnerNode(tf.keras.layers.Layer):
   ) -> None:
     super().__init__()
     self.model = model_fn()
-    self.proba_reg_weight = tf.constant(proba_reg_weight)
-    self.beta = tf.constant(beta)
-    self.id = tf.constant(id_)
+    self.proba_reg_weight = proba_reg_weight
+    self.beta = beta
+    self.id = id_
 
   def call(self, inputs, *, training=None):
     x, emb = inputs
