@@ -1,11 +1,10 @@
-from collections.abc import Sequence, Callable
-import functools
-from typing import Callable
+from collections.abc import Callable
+from collections.abc import Sequence
 
 import tensorflow as tf
 
-L2 = 5e-4
-L1 = 5e-4
+L2 = 1e-4
+L1 = 0
 
 VECTOR = Sequence[float]
 
