@@ -81,7 +81,7 @@ class InnerNode(tf.keras.layers.Layer):
         self.proba_reg_weight *
         tf.keras.losses.binary_crossentropy([0.5], tf.math.reduce_mean(p_right))
       )
-      self.add_loss(1e-4 * tf.keras.regularizers.l1_l2(l1=L1, l2=L2)(w))
+      self.add_loss(1e-4 * tf.keras.regularizers.l1_l2(l1=5e-4, l2=5e-4)(w))
     else:
       # During inference the behavior is different in this aspect:
       # 1. The system uses hard decision trees.
