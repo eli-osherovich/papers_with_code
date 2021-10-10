@@ -4,7 +4,7 @@ from collections.abc import Sequence
 import tensorflow as tf
 
 L2 = 1e-4
-L1 = 0
+L1 = 1e-6
 
 VECTOR = Sequence[float]
 
