@@ -115,34 +115,25 @@ class InnerNode(tf.keras.layers.Layer):
 
 def gen_input_encoder(
   *,
-  input_dim: int,
   emb_dim: int,
+  n_fc: int = 4,
+  stddev: float = 0.1,
+  l1: float = 1e-6,
+  l2: float = 1e-4,
+  dropout: float = 0.5
 ) -> tf.keras.Model:
-  return tf.keras.Sequential([
-    tf.keras.layers.InputLayer(input_shape=(input_dim,)),
-    tf.keras.layers.GaussianNoise(0.1),
-    tf.keras.layers.Dense(
-      emb_dim,
-      activation="relu",
-      kernel_regularizer=tf.keras.regularizers.L1L2(L1, L2),
-    ),
-    tf.keras.layers.Dense(
-      emb_dim,
-      activation="relu",
-      kernel_regularizer=tf.keras.regularizers.L1L2(L1, L2),
-    ),
-    tf.keras.layers.Dense(
-      emb_dim,
-      activation="relu",
-      kernel_regularizer=tf.keras.regularizers.L1L2(L1, L2),
-    ),
-    tf.keras.layers.Dense(
-      emb_dim,
-      activation="relu",
-      kernel_regularizer=tf.keras.regularizers.L1L2(L1, L2),
-    ),
-    tf.keras.layers.Dropout(0.5),
-  ])
+  encoder = tf.keras.Sequential()
+  encoder.add(tf.keras.layers.GaussianNoise(stddev))
+  for _ in range(n_fc):
+    encoder.add(
+      tf.keras.layers.Dense(
+        emb_dim,
+        activation="relu",
+        kernel_regularizer=tf.keras.regularizers.L1L2(l1, l2),
+      )
+    )
+  encoder.add(tf.keras.layers.Dropout(dropout))
+  return encoder
 
 
 def gen_inner_model(

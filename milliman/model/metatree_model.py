@@ -33,9 +33,7 @@ _B_HI = tf.constant([
 
 @gin.configurable
 def get_model(depth: int, input_dim: int, emb_dim: int) -> tf.keras.Model:
-  encoder_fn = functools.partial(
-    metatree.gen_input_encoder, input_dim=input_dim, emb_dim=emb_dim
-  )
+  encoder_fn = functools.partial(metatree.gen_input_encoder, emb_dim=emb_dim)
   inner_model_fn = functools.partial(
     metatree.gen_inner_model,
     input_dim=input_dim,
