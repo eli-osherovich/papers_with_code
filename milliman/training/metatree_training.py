@@ -44,7 +44,7 @@ def train(
     test_size=test_size,
     random_state=random_state,
   )
-  train_ds, eval_ds = _prepare_datasets(
+  train_ds, eval_ds, ds_info = _prepare_datasets(
     X_train, y_train, X_val, y_val, batch_size
   )
 
@@ -57,7 +57,11 @@ def train(
   scale_pos_weight = fit_params.pop("scale_pos_weight")
   class_weight = {0: 1.0, 1: scale_pos_weight}
 
-  m = model.get_model(model.MODEL.METATREE, **model_args)
+  m = model.get_model(
+    model.MODEL.METATREE,
+    b_limits=(ds_info["b_lo"], ds_info["b_hi"]),
+    **model_args
+  )
 
   m = _train_model(
     train_ds,
@@ -90,11 +94,15 @@ def train_cv(
     X_train, X_val = X[train_index], X[val_index]
     y_train, y_val = y[train_index], y[val_index]
 
-    train_ds, eval_ds = _prepare_datasets(
+    train_ds, eval_ds, ds_info = _prepare_datasets(
       X_train, y_train, X_val, y_val, batch_size
     )
 
-    m = model.get_model(model.MODEL.METATREE, **model_args)
+    m = model.get_model(
+      model.MODEL.METATREE,
+      b_limits=(ds_info["b_lo"], ds_info["b_hi"]),
+      **model_args
+    )
 
     m = _train_model(
       train_ds,
@@ -154,16 +162,16 @@ def _prepare_datasets(X_train, y_train, X_val, y_val, batch_size):
   pt = StandardScaler()
   pt.fit(X_train)
 
-  ds_data = {}
-  ds_data["mean"] = pt.mean_
-  ds_data["std"] = pt.scale_
-  ds_data["min"] = X_train.min().values
-  ds_data["max"] = X_train.max().values
-  ds_data["b_lo"] = (ds_data["mean"] - ds_data["max"]) / ds_data["std"]
-  ds_data["b_hi"] = (ds_data["mean"] - ds_data["min"]) / ds_data["std"]
+  ds_info = {}
+  ds_info["mean"] = pt.mean_
+  ds_info["std"] = pt.scale_
+  ds_info["min"] = X_train.min().values
+  ds_info["max"] = X_train.max().values
+  ds_info["b_lo"] = (ds_info["mean"] - ds_info["max"]) / ds_info["std"]
+  ds_info["b_hi"] = (ds_info["mean"] - ds_info["min"]) / ds_info["std"]
 
   with open("/tmp/dataset.json", "w") as f:
-    json.dump({k: v.astype(float).tolist() for k, v in ds_data.items()},
+    json.dump({k: v.astype(float).tolist() for k, v in ds_info.items()},
               f,
               indent=2)
 
@@ -179,7 +187,7 @@ def _prepare_datasets(X_train, y_train, X_val, y_val, batch_size):
     len(X_val), drop_remainder=True
   )
 
-  return train_ds, eval_ds
+  return train_ds, eval_ds, ds_info
 
 
 def print_tree(model, ds):

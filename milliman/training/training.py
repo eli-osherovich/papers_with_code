@@ -24,7 +24,7 @@ def _get_action():
   elif FLAGS.action == "tune":
     return "tune"
   else:
-    raise RuntimeError("Unknown action: %s", FLAGS.action)
+    raise RuntimeError("Unknown action: %s" % FLAGS.action)
 
 
 def _get_model_training_module():
@@ -35,7 +35,7 @@ def _get_model_training_module():
   elif FLAGS.model == model.MODEL.METATREE:
     return metatree_training
   else:
-    raise RuntimeError("Unknown model: %s", FLAGS.model)
+    raise RuntimeError("Unknown model: %s" % FLAGS.model)
 
 
 def train():

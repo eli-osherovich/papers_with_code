@@ -115,6 +115,7 @@ class InnerNode(tf.keras.layers.Layer):
 
 def gen_input_encoder(
   *,
+  input_dim: int,
   emb_dim: int,
   n_fc: int = 4,
   stddev: float = 0.1,
@@ -123,6 +124,7 @@ def gen_input_encoder(
   dropout: float = 0.5
 ) -> tf.keras.Model:
   encoder = tf.keras.Sequential()
+  encoder.add(tf.keras.Input(shape=(input_dim,)))
   encoder.add(tf.keras.layers.GaussianNoise(stddev))
   for _ in range(n_fc):
     encoder.add(
