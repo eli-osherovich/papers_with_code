@@ -163,7 +163,9 @@ def _prepare_datasets(X_train, y_train, X_val, y_val, batch_size):
   ds_data["b_hi"] = (ds_data["mean"] - ds_data["min"]) / ds_data["std"]
 
   with open("/tmp/dataset.json", "w") as f:
-    json.dump({k: v.astype(float).tolist() for k, v in ds_data.items()}, f)
+    json.dump({k: v.astype(float).tolist() for k, v in ds_data.items()},
+              f,
+              indent=2)
 
   X_train = pt.transform(X_train)
   X_val = pt.transform(X_val)

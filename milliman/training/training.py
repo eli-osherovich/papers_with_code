@@ -27,7 +27,7 @@ def _get_action():
     raise RuntimeError("Unknown action: %s", FLAGS.action)
 
 
-def _get_model_module():
+def _get_model_training_module():
   if FLAGS.model == model.MODEL.TREE:
     return tree_training
   elif FLAGS.model == model.MODEL.XGB:
@@ -43,12 +43,12 @@ def train():
   ds_data = {}
   ds_data["cols"] = X.columns.tolist()
   with open("/tmp/dataset_columns.json", "w") as f:
-    json.dump(ds_data, f)
+    json.dump(ds_data, f, indent=2)
 
   X.to_numpy(dtype=np.float32)
   y = y.to_numpy(dtype=np.float32)
 
-  model_module = _get_model_module()
+  model_module = _get_model_training_module()
   action = _get_action()
   train_fn = getattr(model_module, action)
   return train_fn(X, y)
