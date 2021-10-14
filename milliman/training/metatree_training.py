@@ -178,6 +178,10 @@ def _prepare_datasets(X_train, y_train, X_val, y_val, batch_size):
   X_train = pt.transform(X_train)
   X_val = pt.transform(X_val)
 
+  # Protection against small datasets.
+  if len(X_train) < batch_size:
+    batch_size = len(X_train)
+
   train_ds = (
     tf.data.Dataset.from_tensor_slices(
       (X_train, y_train)
