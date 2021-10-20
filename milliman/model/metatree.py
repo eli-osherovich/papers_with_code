@@ -3,9 +3,6 @@ from collections.abc import Sequence
 
 import tensorflow as tf
 
-L2 = 1e-4
-L1 = 1e-6
-
 VECTOR = Sequence[float]
 
 
@@ -139,7 +136,13 @@ def gen_input_encoder(
 
 
 def gen_inner_model(
-  *, input_dim: int, emb_dim: int, b_limits: Sequence[VECTOR, VECTOR]
+  *,
+  input_dim: int,
+  emb_dim: int,
+  n_fc: int = 1,
+  b_limits: Sequence[VECTOR, VECTOR],
+  l1: float = 1e-6,
+  l2: float = 1e-4,
 ) -> tf.keras.Model:
   # X and EMB are combined via ResNet-like style:
   # 1. x is casted to the same dimension as emb (via matrix multiplication)
@@ -148,17 +151,18 @@ def gen_inner_model(
   emb = tf.keras.Input(shape=(emb_dim,))
   h = tf.keras.layers.Dense(emb_dim, use_bias=False)(x)
   h = h + emb
-  h = tf.keras.layers.Dense(
-    emb_dim,
-    activation="relu",
-    kernel_regularizer=tf.keras.regularizers.L1L2(L1, L2),
-  )(
-    h
-  )
+  for _ in range(n_fc):
+    h = tf.keras.layers.Dense(
+      emb_dim,
+      activation="relu",
+      kernel_regularizer=tf.keras.regularizers.L1L2(l1, l2),
+    )(
+      h
+    )
   w = tf.keras.layers.Dense(
     input_dim,
     bias_initializer="ones",
-    kernel_regularizer=tf.keras.regularizers.L1L2(L1, L2),
+    kernel_regularizer=tf.keras.regularizers.L1L2(l1, l2),
     activation="relu"
   )(
     h
@@ -171,7 +175,7 @@ def gen_inner_model(
 
   b = tf.keras.layers.Dense(
     input_dim,
-    kernel_regularizer=tf.keras.regularizers.L1L2(L1, L2),
+    kernel_regularizer=tf.keras.regularizers.L1L2(l1, l2),
     activation="tanh"
   )(
     h
@@ -182,7 +186,15 @@ def gen_inner_model(
   return tf.keras.Model(inputs=(x, emb), outputs=(w, b))
 
 
-def gen_leaf_model(*, input_dim: int, emb_dim: int) -> tf.keras.Model:
+def gen_leaf_model(
+  *,
+  input_dim: int,
+  emb_dim: int,
+  n_fc: int = 1,
+  out_dim: int = 1,
+  l1: float = 1e-6,
+  l2: float = 1e-4,
+) -> tf.keras.Model:
   # X and EMB are combined via ResNet-like style:
   # 1. x is casted to the same dimension as emb (via matrix multiplication)
   # 2. they are summed.
@@ -190,17 +202,18 @@ def gen_leaf_model(*, input_dim: int, emb_dim: int) -> tf.keras.Model:
   emb = tf.keras.Input(shape=(emb_dim,))
   h = tf.keras.layers.Dense(emb_dim, use_bias=False)(x)
   h = h + emb
+  for _ in range(n_fc):
+    h = tf.keras.layers.Dense(
+      emb_dim,
+      activation="relu",
+      kernel_regularizer=tf.keras.regularizers.L1L2(l1, l2),
+    )(
+      h
+    )
   h = tf.keras.layers.Dense(
-    emb_dim,
-    activation="relu",
-    kernel_regularizer=tf.keras.regularizers.L1L2(L1, L2),
-  )(
-    h
-  )
-  h = tf.keras.layers.Dense(
-    1,
+    out_dim,
     activation="sigmoid",
-    kernel_regularizer=tf.keras.regularizers.L1L2(L1, L2),
+    kernel_regularizer=tf.keras.regularizers.L1L2(l1, l2),
   )(
     h
   )
