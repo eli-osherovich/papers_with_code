@@ -6,6 +6,27 @@ import tensorflow as tf
 from . import metatree
 
 
+def get_keras_class(module, **kwargs):
+  cur_module = getattr(tf.keras, module)
+  cls_instance = cur_module.get(kwargs.pop("identifier"))
+  return type(cls_instance)(**kwargs)
+
+
+@gin.configurable
+def get_optimizer(**kwargs):
+  return get_keras_class("optimizers", **kwargs)
+
+
+@gin.configurable
+def get_loss(**kwargs):
+  return get_keras_class("losses", **kwargs)
+
+
+@gin.configurable
+def get_metric(**kwargs):
+  return get_keras_class("metrics", **kwargs)
+
+
 @gin.configurable
 def get_model(depth: int, emb_dim: int, b_limits) -> tf.keras.Model:
   input_dim = len(b_limits[0])
@@ -31,11 +52,11 @@ def get_model(depth: int, emb_dim: int, b_limits) -> tf.keras.Model:
     leaf_model_fn=leaf_model_fn
   )
   model.compile(
-    loss=tf.keras.losses.BinaryCrossentropy(),
+    loss=get_loss(),
     metrics=[
-      tf.keras.metrics.BinaryAccuracy(name="acc"),
+      get_metric(),
     ],
-    optimizer=tf.keras.optimizers.Adam(learning_rate=3e-4, amsgrad=True),
+    optimizer=get_optimizer(),
   )
 
   return model
