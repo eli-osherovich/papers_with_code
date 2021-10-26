@@ -1,7 +1,7 @@
 """A bunch of useful types"""
 
 from collections.abc import Sequence
-from typing import Callable, List, Union
+from typing import Callable, Union
 
 import numpy as np
 import tensorflow as tf
@@ -19,7 +19,7 @@ Loss = Union[str, tf.keras.losses.Loss, Callable]
 Metric = Union[None, str, Callable, tf.keras.metrics.Metric]
 Optimizer = Union[tf.keras.optimizers.Optimizer, str]
 
-TensorLike = Union[List[Union[Number, list]], tuple, Number, np.ndarray,
+TensorLike = Union[list[Union[Number, list]], tuple, Number, np.ndarray,
                    tf.Tensor, tf.SparseTensor, tf.Variable]
 FloatTensorLike = Union[tf.Tensor, float, np.float16, np.float32, np.float64]
 AcceptableDTypes = Union[tf.DType, np.dtype, type, int, str, None]
