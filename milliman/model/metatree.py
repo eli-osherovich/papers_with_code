@@ -1,8 +1,9 @@
 from collections.abc import Callable
 from collections.abc import Sequence
-from typing import Union
 
 import tensorflow as tf
+
+from ...common.types import Activation
 
 VECTOR = Sequence[float]
 
@@ -116,7 +117,7 @@ def gen_input_encoder(
   input_dim: int,
   emb_dim: int,
   n_fc: int = 4,
-  activation: Union[str, Callable] = "relu",
+  activation: Activation = "relu",
   stddev: float = 0.1,
   l1: float = 1e-6,
   l2: float = 1e-4,
@@ -142,7 +143,7 @@ def gen_inner_model(
   input_dim: int,
   emb_dim: int,
   n_fc: int = 1,
-  activation: Union[str, Callable] = "relu",
+  activation: Activation = "relu",
   b_limits: Sequence[VECTOR, VECTOR],
   l1: float = 1e-6,
   l2: float = 1e-4,
@@ -194,7 +195,7 @@ def gen_leaf_model(
   input_dim: int,
   emb_dim: int,
   n_fc: int = 1,
-  activation: Union[str, Callable] = "relu",
+  activation: Activation = "relu",
   out_dim: int = 1,
   l1: float = 1e-6,
   l2: float = 1e-4,
