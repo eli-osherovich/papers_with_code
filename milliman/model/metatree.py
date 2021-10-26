@@ -4,8 +4,7 @@ from collections.abc import Sequence
 import tensorflow as tf
 
 from ...common.types import Activation
-
-VECTOR = Sequence[float]
+from ...common.types import Vector
 
 
 class TreeModel(tf.keras.Model):
@@ -144,7 +143,7 @@ def gen_inner_model(
   emb_dim: int,
   n_fc: int = 1,
   activation: Activation = "relu",
-  b_limits: Sequence[VECTOR, VECTOR],
+  b_limits: Sequence[Vector, Vector],
   l1: float = 1e-6,
   l2: float = 1e-4,
 ) -> tf.keras.Model:
