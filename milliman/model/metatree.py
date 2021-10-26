@@ -1,5 +1,6 @@
 from collections.abc import Callable
 from collections.abc import Sequence
+from typing import Union
 
 import tensorflow as tf
 
@@ -115,6 +116,7 @@ def gen_input_encoder(
   input_dim: int,
   emb_dim: int,
   n_fc: int = 4,
+  activation: Union[str, Callable] = "relu",
   stddev: float = 0.1,
   l1: float = 1e-6,
   l2: float = 1e-4,
@@ -127,7 +129,7 @@ def gen_input_encoder(
     encoder.add(
       tf.keras.layers.Dense(
         emb_dim,
-        activation="relu",
+        activation=activation,
         kernel_regularizer=tf.keras.regularizers.L1L2(l1, l2),
       )
     )
@@ -140,6 +142,7 @@ def gen_inner_model(
   input_dim: int,
   emb_dim: int,
   n_fc: int = 1,
+  activation: Union[str, Callable] = "relu",
   b_limits: Sequence[VECTOR, VECTOR],
   l1: float = 1e-6,
   l2: float = 1e-4,
@@ -154,7 +157,7 @@ def gen_inner_model(
   for _ in range(n_fc):
     h = tf.keras.layers.Dense(
       emb_dim,
-      activation="relu",
+      activation=activation,
       kernel_regularizer=tf.keras.regularizers.L1L2(l1, l2),
     )(
       h
@@ -191,6 +194,7 @@ def gen_leaf_model(
   input_dim: int,
   emb_dim: int,
   n_fc: int = 1,
+  activation: Union[str, Callable] = "relu",
   out_dim: int = 1,
   l1: float = 1e-6,
   l2: float = 1e-4,
@@ -205,7 +209,7 @@ def gen_leaf_model(
   for _ in range(n_fc):
     h = tf.keras.layers.Dense(
       emb_dim,
-      activation="relu",
+      activation=activation,
       kernel_regularizer=tf.keras.regularizers.L1L2(l1, l2),
     )(
       h
