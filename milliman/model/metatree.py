@@ -24,9 +24,9 @@ class TreeModel(tf.keras.Model):
       depth=depth, inner_model_fn=inner_model_fn, leaf_model_fn=leaf_model_fn
     )
 
-  def call(self, x):
-    emb = self.encoder(x)
-    return self.tree((x, emb))
+  def call(self, x, training=False):
+    emb = self.encoder(x, training=training)
+    return self.tree((x, emb), training=training)
 
 
 class LeafNode(tf.keras.layers.Layer):
@@ -37,8 +37,8 @@ class LeafNode(tf.keras.layers.Layer):
     self.id = id_
     self.model = model_fn()
 
-  def call(self, inputs):
-    self.value = self.model(inputs)
+  def call(self, inputs, training=False):
+    self.value = self.model(inputs, training=training)
     return self.value
 
 
@@ -61,7 +61,7 @@ class InnerNode(tf.keras.layers.Layer):
     self.beta = beta
     self.id = id_
 
-  def call(self, inputs, *, training=None):
+  def call(self, inputs, *, training=False):
     x, emb = inputs
     del emb  # unused
     w, b = self.model(inputs)
