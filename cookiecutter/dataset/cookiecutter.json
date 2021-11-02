@@ -1,0 +1,5 @@
+{
+  "dataset": "My Dataset",
+  "dataset_class": "{{cookiecutter.dataset.replace(' ', '').replace('-', '_')}}",
+  "dataset_module": "{{cookiecutter.dataset_class.lower()}}"
+}
