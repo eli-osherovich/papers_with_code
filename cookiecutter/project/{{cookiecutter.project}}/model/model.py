@@ -15,6 +15,6 @@ flags.DEFINE_enum_class("model", MODEL.{{cookiecutter.model.upper()}}, MODEL, "M
 
 
 def get_model(**model_args):
-  module_name = FLAGS.model.name.lower() + {{cookiecutter.model_module_suffix}}
+  module_name = FLAGS.model.name.lower() + "{{cookiecutter.model_module_suffix}}"
   model_module = getattr(sys.modules[__package__], module_name)
   return model_module.get_model(**model_args)
