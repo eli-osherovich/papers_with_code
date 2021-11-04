@@ -2,9 +2,9 @@ import sys
 
 from absl import flags
 
-from . import {{cookiecutter.model_prefix}}{{cookiecutter.training_module_suffix}}
+from . import {{cookiecutter.model_prefix}}{{cookiecutter.training_module_suffix}}  # noqa F401 pylint: disable=unused-import
 from .. import data
-from .. import model
+from .. import models  # noqa F401 pylint: disable=unused-import
 
 
 FLAGS = flags.FLAGS
@@ -22,7 +22,7 @@ def _get_action():
   elif FLAGS.action == "tune":
     return "tune"
   else:
-    raise RuntimeError("Unknown action: %s" % FLAGS.action)
+    raise RuntimeError(f"Unknown action: {FLAGS.action}")
 
 
 def _get_model_training_module():
