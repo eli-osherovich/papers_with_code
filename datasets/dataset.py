@@ -12,6 +12,10 @@ DF_PAIR = tuple[pd.DataFrame, pd.DataFrame]
 DS_PAIR = tuple[tf.data.Dataset, tf.data.Dataset]
 NP_PAIR = tuple[np.ndarray, np.ndarray]
 
+DS_RESULT = Union[DS_PAIR, tuple[DS_PAIR, ...]]
+DF_RESULT = Union[DF_PAIR, tuple[DF_PAIR, ...]]
+NP_RESULT = Union[NP_PAIR, tuple[NP_PAIR, ...]]
+
 
 class Dataset:
 
@@ -36,15 +40,15 @@ class Dataset:
   def download_dataset(self, ds_name="train") -> pathlib.Path:
     return io.download_dataset(ds_name, self.config_datasets)
 
-  def as_dataset(self, *splits) -> Union[DS_PAIR, tuple[DS_PAIR, ...]]:
+  def as_dataset(self, *splits) -> DS_RESULT:
     res = tuple(self._generate_dataset(s) for s in splits)
     return squeeze(res)
 
-  def as_dataframe(self, *splits) -> Union[DF_PAIR, tuple[DF_PAIR, ...]]:
+  def as_dataframe(self, *splits) -> DF_RESULT:
     res = tuple(self._generate_dataframe(s) for s in splits)
     return squeeze(res)
 
-  def as_numpy(self, *splits) -> Union[NP_PAIR, tuple[NP_PAIR, ...]]:
+  def as_numpy(self, *splits) -> NP_RESULT:
     res = tuple(self._generate_numpy(s) for s in splits)
     return squeeze(res)
 

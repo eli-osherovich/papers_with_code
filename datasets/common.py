@@ -1,9 +1,7 @@
 from absl import logging
-import numpy as np
-import pandas as pd
-import tensorflow as tf
 
 from . import *  # noqa F403
+from . import dataset
 
 
 # TODO: consider class registry instead of blind import.
@@ -16,16 +14,16 @@ def cls_factory(cls, **kwargs):
     raise ValueError(f"Unable to load class called {cls}") from e
 
 
-def load_dataset(ds_cls, *splits, **kwargs) -> tf.data.Dataset:
+def load_dataset(ds_cls, *splits, **kwargs) -> dataset.DS_RESULT:
   ds = cls_factory(ds_cls, **kwargs)
   return ds.as_dataset(*splits)
 
 
-def load_dataframe(ds_cls, *splits, **kwargs) -> pd.DataFrame:
+def load_dataframe(ds_cls, *splits, **kwargs) -> dataset.DF_RESULT:
   ds = cls_factory(ds_cls, **kwargs)
   return ds.as_dataframe(*splits)
 
 
-def load_numpy(ds_cls, *splits, **kwargs) -> np.ndarray:
+def load_numpy(ds_cls, *splits, **kwargs) -> dataset.NP_RESULT:
   ds = cls_factory(ds_cls, **kwargs)
   return ds.as_numpy(*splits)
