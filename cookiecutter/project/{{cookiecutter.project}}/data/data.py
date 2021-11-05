@@ -1,9 +1,8 @@
+"""Common interface to Dataset loading."""
 from absl import flags
-import numpy as np
-import pandas as pd
-import tensorflow as tf
 
 from ...datasets import common as ds_common
+from ...datasets import dataset
 
 FLAGS = flags.FLAGS
 
@@ -20,13 +19,13 @@ flags.DEFINE_string(
 )
 
 
-def get_numpy() -> tuple[np.ndarray, np.ndarray]:
+def get_numpy() -> dataset.NP_RESULT:
   return ds_common.load_numpy(FLAGS.dataset, FLAGS.train_name)
 
 
-def get_dataframe() -> tuple[pd.DataFrame, pd.DataFrame]:
+def get_dataframe() -> dataset.DF_RESULT:
   return ds_common.load_dataframe(FLAGS.dataset, FLAGS.train_name)
 
 
-def get_dataset() -> tf.data.Dataset:
+def get_dataset() -> dataset.DS_RESULT:
   return ds_common.load_dataset(FLAGS.dataset, FLAGS.train_name)
