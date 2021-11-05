@@ -6,10 +6,15 @@
 
 from typing import Any, Optional
 
+from absl import flags
+import gin
 import tensorflow as tf
 import tensorflow_addons as tfa
 
+from . import tasks
 from ...common.types import Activation
+
+FLAGS = flags.FLAGS
 
 # Inputs/outputs of each step:
 _PREPROC_DATA = "preproc_data"
@@ -311,3 +316,39 @@ class TabNet(tf.keras.Model):
     for step in self.steps:
       step_io = step(step_io, **kwargs)
     return step_io
+
+
+@gin.configurable
+def get_model(**kwargs) -> tf.keras.Model:
+  if FLAGS.task == tasks.TASK.REGRESSION:
+    return get_regression_model(**kwargs)
+  elif FLAGS.task == tasks.TASK.BINARY:
+    return get_binary_model(**kwargs)
+  elif FLAGS.task == tasks.TASK.MULTICLASS:
+    return get_multiclass_model(**kwargs)
+  else:
+    raise RuntimeError(f"Wrong task type: {FLAGS.type}")
+
+
+@gin.configurable
+def get_regression_model(**kwargs) -> tf.keras.Model:
+  return tf.keras.Sequential([
+    TabNet(**kwargs),
+    tf.keras.layers.Dense(1),
+  ])
+
+
+@gin.configurable
+def get_binary_model(**kwargs) -> tf.keras.Model:
+  return tf.keras.Sequential([
+    TabNet(**kwargs),
+    tf.keras.layers.Dense(1, activation="sigmoid"),
+  ])
+
+
+@gin.configurable
+def get_multiclass_model(num_classes: int, **kwargs) -> tf.keras.Model:
+  return tf.keras.Sequential([
+    TabNet(**kwargs),
+    tf.keras.layers.Dense(num_classes, activation="softmax"),
+  ])
