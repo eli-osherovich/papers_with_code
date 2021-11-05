@@ -86,5 +86,5 @@ class PandasCSVReader(FileReader):
     super().__init__()
     self._kwargs = kwargs
 
-  def read(self, file_object):
+  def read(self, file_object) -> pd.DataFrame:
     return pd.read_csv(file_object, **self._kwargs)
