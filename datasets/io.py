@@ -15,7 +15,7 @@ def download_dataset(
   ds_name: str,
   dl_config: dict[str, str],
   cache_dir: Union[str, pathlib.Path, None] = None,
-):
+) -> pathlib.Path:
   cache_dir = cache_dir or pathlib.Path(tempfile.gettempdir()) / _DATASETS_DIR
   # Make sure it's a Path.
   cache_dir = pathlib.Path(cache_dir)

@@ -1,10 +1,16 @@
 import importlib
+import pathlib
+from typing import Union
 
 import numpy as np
 import pandas as pd
 import tensorflow as tf
 
 from . import io
+
+DF_PAIR = tuple[pd.DataFrame, pd.DataFrame]
+DS_PAIR = tuple[tf.data.Dataset, tf.data.Dataset]
+NP_PAIR = tuple[np.ndarray, np.ndarray]
 
 
 class Dataset:
@@ -14,7 +20,7 @@ class Dataset:
     self._df_args = df_args or {}
 
   @property
-  def cls_package(self):
+  def cls_package(self) -> str:
     return self.__module__.rsplit(".", 1)[0]
 
   @property
@@ -23,31 +29,31 @@ class Dataset:
     return dl_config.DATASETS
 
   @property
-  def feature_dict(self):
+  def feature_dict(self) -> dict:
     ds_config = importlib.import_module(".ds_config", self.cls_package)
     return ds_config.feature_dict
 
-  def download_dataset(self, ds_name):
+  def download_dataset(self, ds_name="train") -> pathlib.Path:
     return io.download_dataset(ds_name, self.config_datasets)
 
-  def as_dataset(self, *splits):
+  def as_dataset(self, *splits) -> Union[DS_PAIR, tuple[DS_PAIR, ...]]:
     res = tuple(self._generate_dataset(s) for s in splits)
     return squeeze(res)
 
-  def as_dataframe(self, *splits):
+  def as_dataframe(self, *splits) -> Union[DF_PAIR, tuple[DF_PAIR, ...]]:
     res = tuple(self._generate_dataframe(s) for s in splits)
     return squeeze(res)
 
-  def as_numpy(self, *splits):
+  def as_numpy(self, *splits) -> Union[NP_PAIR, tuple[NP_PAIR, ...]]:
     res = tuple(self._generate_numpy(s) for s in splits)
     return squeeze(res)
 
-  def _generate_dataframe(self, split_name):
+  def _generate_dataframe(self, split_name) -> DF_PAIR:
     X, y = self._read_df(split_name)
     X = pd.get_dummies(X, prefix_sep="__:__")
     return X, y
 
-  def _read_df(self, split_name):
+  def _read_df(self, split_name) -> DF_PAIR:
     ds_path = self.download_dataset(split_name)
     file_accessor = io.FileAccessor(ds_path)
     file_reader = io.PandasCSVReader(
@@ -58,7 +64,8 @@ class Dataset:
     X = X.drop(self._target_columns, axis=1)
     return X, y
 
-  def _generate_numpy(self, split_name):
+  def _generate_numpy(self,
+                      split_name) -> Union[np.ndarray, tuple[np.ndarray, ...]]:
     dataframes = self._generate_dataframe(split_name)
     if isinstance(dataframes, (tuple, list)):
       arrays = tuple(df.to_numpy(dtype=np.float32) for df in dataframes)
@@ -66,7 +73,7 @@ class Dataset:
       arrays = dataframes.to_numpy(dtype=np.float32)
     return arrays
 
-  def _generate_dataset(self, split_name):
+  def _generate_dataset(self, split_name) -> tf.data.Dataset:
     arrays = self._generate_numpy(split_name)
     return tf.data.Dataset.from_tensor_slices(arrays)
 
