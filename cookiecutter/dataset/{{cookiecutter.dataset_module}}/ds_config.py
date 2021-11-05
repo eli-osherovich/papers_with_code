@@ -17,4 +17,7 @@ feature_dict = {
   #   "human",
   #   "unknown",
   # ])
+  {% for n in range(cookiecutter.num_features|int) %}
+  "f{{n}}": _FLOAT_TYPE,
+  {%- endfor %}
 }
