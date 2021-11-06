@@ -2,5 +2,17 @@
   "dataset": "My Dataset",
   "dataset_class": "{{cookiecutter.dataset.replace(' ', '').replace('-', '_')}}",
   "dataset_module": "{{cookiecutter.dataset_class.lower()}}",
-  "num_features": 10
+  "skip_n_rows": 1,
+  "num_columns": 10,
+  "target_columns": "target",
+  "target_type": [
+    "float",
+    "binary",
+    "int",
+    "categorical"
+  ],
+  "categories": "",
+  "train_file_uri": "{{cookiecutter.dataset_module}}.csv",
+  "val_file_uri": "",
+  "test_file_uri": ""
 }

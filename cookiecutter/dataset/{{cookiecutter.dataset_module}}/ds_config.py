@@ -8,8 +8,10 @@ _FLOAT_TYPE = np.float32
 _BOOL_TYPE = np.int32
 _CATEGORICAL_TYPE = pd.CategoricalDtype
 
-raise NotImplementedError("Add dataset schema")
+raise NotImplementedError("Please review the schema below and remove this exception")
 feature_dict = {
+  # Example:
+  #
   # "col1": _INT_TYPE,
   # "col2": CATEGORICAL_TYPE([
   #   "cat",
@@ -17,7 +19,28 @@ feature_dict = {
   #   "human",
   #   "unknown",
   # ])
-  {% for n in range(cookiecutter.num_features|int) %}
-  "f{{n}}": _FLOAT_TYPE,
+  {%- macro string_to_quoted_list(string) -%}
+  "{{ string.split(",")|join('", "') }}"
+  {%- endmacro -%}
+
+  {%- macro type_mapper(type, categories_string="") -%}
+  {%if type == "float" %}_FLOAT_TYPE{% endif -%}
+  {%if type == "binary" %}_BOOL_TYPE{% endif -%}
+  {%if type == "int" %}_INT_TYPE{% endif -%}
+  {%if type == "categorical" -%}
+  _CATEGORICAL_TYPE([{{ string_to_quoted_list(categories_string) }}])
+  {%- endif -%}
+  {% endmacro -%}
+
+  {%- macro column_schema(prefix, number, type="float", categories_string="") -%}
+  "{{prefix}}{{number}}": {{type_mapper(type, categories_string)}},
+  {%- endmacro -%}
+
+  {% set target_columns = cookiecutter.target_columns.split(",") %}
+  {% for n in range(cookiecutter.num_columns|int - target_columns|length) %}
+  {{column_schema("feature", n)}}
+  {%- endfor -%}
+  {% for t in target_columns %}
+  {{column_schema(t, "", cookiecutter.target_type, cookiecutter.categories)}}
   {%- endfor %}
 }
