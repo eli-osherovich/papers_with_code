@@ -8,7 +8,7 @@ FLAGS = flags.FLAGS
 
 {%- macro dataset_for_task(task)-%}
 {%if task == "regression" %}"Diabetes"{% endif -%}
-{%if task == "binary" %}"Breast_cancer"{% endif -%}
+{%if task == "binary" %}"BreastCancer"{% endif -%}
 {%if task == "multiclass" %}"Iris"{% endif -%}
 {%- endmacro %}
 

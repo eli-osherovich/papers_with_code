@@ -44,7 +44,7 @@ def get_regression_model(**kwargs) -> tf.keras.Model:
     {{cookiecutter.model}}(**kwargs),
     tf.keras.layers.Dense(1),
   ])
-  model.compile(loss="mse", optimizer="adam")
+  model.compile(loss="mse", optimizer="adam", metrics=["RootMeanSquaredError"])
   return model
 
 
@@ -54,7 +54,7 @@ def get_binary_model(**kwargs) -> tf.keras.Model:
     {{cookiecutter.model}}(**kwargs),
     tf.keras.layers.Dense(1, activation="sigmoid"),
   ])
-  model.compile(loss="bce", optimizer="adam")
+  model.compile(loss="bce", optimizer="adam", metrics=["accuracy"])
   return model
 
 
@@ -64,5 +64,5 @@ def get_multiclass_model(num_classes: int = {{cookiecutter.num_classes}}, **kwar
     {{cookiecutter.model}}(**kwargs),
     tf.keras.layers.Dense(num_classes, activation="softmax"),
   ])
-  model.compile(loss="SparseCategoricalCrossentropy", optimizer="adam")
+  model.compile(loss="SparseCategoricalCrossentropy", optimizer="adam", metrics=["accuracy"])
   return model
