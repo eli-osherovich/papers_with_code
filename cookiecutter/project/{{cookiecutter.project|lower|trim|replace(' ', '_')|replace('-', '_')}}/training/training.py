@@ -8,7 +8,7 @@ from absl import flags
 from .. import data
 from .. import models  # noqa F401 pylint: disable=unused-import
 
-from . import {{cookiecutter.model_prefix}}{{cookiecutter.training_module_suffix}}  # noqa F401 pylint: disable=unused-import
+from . import {{cookiecutter.model_prefix}}{{cookiecutter._training_module_suffix}}  # noqa F401 pylint: disable=unused-import
 
 FLAGS = flags.FLAGS
 
@@ -26,7 +26,7 @@ flags.DEFINE_enum_class(
 
 
 def _get_model_training_module():
-  module_name = FLAGS.model.name.lower() + "{{cookiecutter.training_module_suffix}}"
+  module_name = FLAGS.model.name.lower() + "{{cookiecutter._training_module_suffix}}"
   full_name = __package__ + "." + module_name
   try:
     return sys.modules[full_name]

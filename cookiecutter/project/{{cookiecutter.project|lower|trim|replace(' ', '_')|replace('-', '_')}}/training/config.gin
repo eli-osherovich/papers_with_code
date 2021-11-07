@@ -1,2 +1,2 @@
-{{cookiecutter.model_prefix}}{{cookiecutter.training_module_suffix}}.train.test_size = 0.25
-{{cookiecutter.model_prefix}}{{cookiecutter.training_module_suffix}}.train.batch_size = 16
+{{cookiecutter.model_prefix}}{{cookiecutter._training_module_suffix}}.train.test_size = 0.25
+{{cookiecutter.model_prefix}}{{cookiecutter._training_module_suffix}}.train.batch_size = 16

@@ -8,7 +8,6 @@ from . import tasks
 
 FLAGS = flags.FLAGS
 
-
 @gin.configurable
 class {{cookiecutter.model}}(tf.keras.Model):
 
@@ -59,7 +58,7 @@ def get_binary_model(**kwargs) -> tf.keras.Model:
   return model
 
 
-def get_multiclass_model(num_classes: int, **kwargs) -> tf.keras.Model:
+def get_multiclass_model(num_classes: int = {{cookiecutter._num_classes}}, **kwargs) -> tf.keras.Model:
   # Add a binary classification head to the main trunk.
   model = tf.keras.Sequential([
     {{cookiecutter.model}}(**kwargs),
