@@ -1,6 +1,11 @@
 {
   "project": "My Project",
   "model": "MyModel",
+  "task": [
+    "regression",
+    "binary",
+    "multiclass"
+  ],
   "model_prefix": "{{cookiecutter.model|lower|trim|replace(' ', '_')|replace('-', '_')}}",
   "model_module_suffix": "_model",
   "training_module_suffix": "_training"

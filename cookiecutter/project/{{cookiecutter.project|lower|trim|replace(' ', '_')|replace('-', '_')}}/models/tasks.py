@@ -12,4 +12,4 @@ class TASK(enum.Enum):
   MULTICLASS = 3
 
 
-flags.DEFINE_enum_class("task", TASK.REGRESSION, TASK, "Task type")
+flags.DEFINE_enum_class("task", TASK.{{cookiecutter.task|upper}}, TASK, "Task type")
