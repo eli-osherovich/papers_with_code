@@ -1,5 +1,15 @@
 # flake8: noqa F401
+from .breast_cancer import BreastCancer
+from .diabetes import Diabetes
+from .iris import Iris
 from .kddcup99 import KddCup99
-from .milliman import MillimanDataset, MillimanDataset2
-from .movielens import Movielens100K, Movielens1M, Movielens10M, Movielens20M, Movielens25M, MovielensLatest, MovielensLatestSmall
+from .milliman import MillimanDataset
+from .milliman import MillimanDataset2
+from .movielens import Movielens1M
+from .movielens import Movielens10M
+from .movielens import Movielens20M
+from .movielens import Movielens25M
+from .movielens import Movielens100K
+from .movielens import MovielensLatest
+from .movielens import MovielensLatestSmall
 from .ucicovertype import UCICoverType
