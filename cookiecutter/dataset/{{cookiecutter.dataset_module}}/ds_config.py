@@ -1,5 +1,6 @@
 """{{cookiecutter.dataset}} dataset schema.
 """
+from absl import logging
 import numpy as np
 import pandas as pd
 
@@ -8,7 +9,7 @@ _FLOAT_TYPE = np.float32
 _BOOL_TYPE = np.int32
 _CATEGORICAL_TYPE = pd.CategoricalDtype
 
-raise NotImplementedError("Please review the schema below and remove this exception")
+logging.error("Please review the schema below and remove this exception")
 feature_dict = {
   # Example:
   #

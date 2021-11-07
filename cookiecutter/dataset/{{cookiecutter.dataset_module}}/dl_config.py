@@ -1,11 +1,12 @@
 """{{cookiecutter.dataset}} download config.
 """
+from .. import utils
 
-raise NotImplementedError("Please review the data below and remove this exception")
+
 {%- macro split_config(name, uri, checksum="FIXME: add real checksum") -%}
 {%- if uri -%}
   "{{name}}": {
-    "uri": "{{uri}}",
+    "uri": utils.make_uri("{{uri}}"),
     "checksum": "{{checksum}}",
   },
 {%- endif -%}
