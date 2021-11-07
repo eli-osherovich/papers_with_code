@@ -1,7 +1,7 @@
 {
   "dataset": "My Dataset",
   "dataset_class": "{{cookiecutter.dataset.replace(' ', '').replace('-', '_')}}",
-  "dataset_module": "{{cookiecutter.dataset_class.lower()}}",
+  "dataset_module": "{{cookiecutter.dataset|lower|trim|replace(' ', '_')|replace('-', '_')}}",
   "skip_n_rows": 1,
   "num_columns": 10,
   "target_columns": "target",
