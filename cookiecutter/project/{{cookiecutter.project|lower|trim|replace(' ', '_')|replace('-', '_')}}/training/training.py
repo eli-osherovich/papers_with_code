@@ -24,7 +24,7 @@ flags.DEFINE_enum_class(
 )
 
 
-def _get_model_training_module():
+def _get_training_module():
   module_name = FLAGS.model.name.lower() + "{{cookiecutter._training_module_suffix}}"
   full_name = __package__ + "." + module_name
   try:
@@ -37,8 +37,7 @@ def _get_model_training_module():
 
 def training_fn():
   x, y = data.get_numpy()
-  model_training_module = _get_model_training_module()
-  print(model_training_module)
+  model_training_module = _get_training_module()
   actual_training_fn = getattr(
     model_training_module, FLAGS.train_mode.name.lower()
   )

@@ -1,0 +1,1 @@
+ {{cookiecutter.model}}.n_hidden = 2
