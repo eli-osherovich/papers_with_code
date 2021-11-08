@@ -369,7 +369,7 @@ def get_binary_model(**kwargs) -> tf.keras.Model:
 
 
 @gin.configurable
-def get_multiclass_model(num_classes: int = 3, **kwargs) -> tf.keras.Model:
+def get_multiclass_model(num_classes: int = 7, **kwargs) -> tf.keras.Model:
   # Add a binary classification head to the main trunk.
   model = tf.keras.Sequential([
     TabNetWrapper(**kwargs),

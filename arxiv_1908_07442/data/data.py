@@ -8,7 +8,7 @@ FLAGS = flags.FLAGS
 
 flags.DEFINE_string(
   "dataset",
-  default="Iris",
+  default="UCICoverType",
   help="Dataset to use",
 )
 
