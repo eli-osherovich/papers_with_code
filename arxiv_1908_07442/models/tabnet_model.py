@@ -318,6 +318,22 @@ class TabNet(tf.keras.Model):
     return step_io
 
 
+class TabNetWrapper(TabNet):
+  """TabNetWrapper with a single output.
+
+  A simple wrapper that extracts only one output of the tabnet: decision.
+  It is need to let one use TabNet in a Sequential model. Which, in turn,
+  provides the convenience of letting one not specify input shape.
+  """
+
+  def __init__(self, *args, **kwargs) -> None:
+    super().__init__(*args, **kwargs)
+
+  def call(self, *args, **kwargs):
+    res = super().call(*args, **kwargs)
+    return res[_DECISION]
+
+
 @gin.configurable
 def get_model(**kwargs) -> tf.keras.Model:
   if FLAGS.task == tasks.TASK.REGRESSION:
@@ -332,23 +348,37 @@ def get_model(**kwargs) -> tf.keras.Model:
 
 @gin.configurable
 def get_regression_model(**kwargs) -> tf.keras.Model:
-  return tf.keras.Sequential([
+  # Add a regression head to the main trunk.
+  model = tf.keras.Sequential([
     TabNet(**kwargs),
     tf.keras.layers.Dense(1),
   ])
+  model.compile(loss="mse", optimizer="adam", metrics=["RootMeanSquaredError"])
+  return model
 
 
 @gin.configurable
 def get_binary_model(**kwargs) -> tf.keras.Model:
-  return tf.keras.Sequential([
+  # Add a binary classification head to the main trunk.
+  model = tf.keras.Sequential([
     TabNet(**kwargs),
     tf.keras.layers.Dense(1, activation="sigmoid"),
   ])
+  model.compile(loss="bce", optimizer="adam", metrics=["accuracy"])
+  return model
 
 
 @gin.configurable
-def get_multiclass_model(num_classes: int, **kwargs) -> tf.keras.Model:
-  return tf.keras.Sequential([
-    TabNet(**kwargs),
+def get_multiclass_model(num_classes: int = 3, **kwargs) -> tf.keras.Model:
+  # Add a binary classification head to the main trunk.
+  model = tf.keras.Sequential([
+    TabNetWrapper(**kwargs),
     tf.keras.layers.Dense(num_classes, activation="softmax"),
   ])
+
+  model.compile(
+    loss="SparseCategoricalCrossentropy",
+    optimizer="adam",
+    metrics=["accuracy"]
+  )
+  return model

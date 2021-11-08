@@ -1,0 +1,7 @@
+tabnet_model.get_multiclass_model.n_steps = 4
+tabnet_model.get_multiclass_model.shared_dense_args = {"units": 128}
+tabnet_model.get_multiclass_model.mask_features_dim = 64
+tabnet_model.get_multiclass_model.decision_features_dim = 64
+tabnet_model.get_multiclass_model.relaxation_factor = 1.5
+tabnet_model.get_multiclass_model.dense_args = {"units": 128}
+# tabnet_model.get.multiclass_model.batch_norm_args: dict[str, Any] = {}

@@ -1,0 +1,2 @@
+tabnet_training.train.test_size = 0.25
+tabnet_training.train.batch_size = 16

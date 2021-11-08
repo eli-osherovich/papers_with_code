@@ -1,3 +1,4 @@
+"""Common interface to Dataset loading."""
 from absl import flags
 
 from ...datasets import common as ds_common
@@ -7,7 +8,7 @@ FLAGS = flags.FLAGS
 
 flags.DEFINE_string(
   "dataset",
-  default="UCICoverType",
+  default="Iris",
   help="Dataset to use",
 )
 

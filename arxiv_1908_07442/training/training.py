@@ -1,11 +1,11 @@
 """Common interface to model training and tuning.
 """
 import enum
-import importlib
 import sys
 
 from absl import flags
 
+from . import tabnet_training  # noqa F401 pylint: disable=unused-import
 from .. import data
 from .. import models  # noqa F401 pylint: disable=unused-import
 
@@ -24,19 +24,21 @@ flags.DEFINE_enum_class(
 )
 
 
-def _get_model_training_module():
+def _get_training_module():
   module_name = FLAGS.model.name.lower() + "_training"
-  training_module = importlib.import_module(
-    "." + module_name, sys.modules[__package__].__name__
-  )
-  return training_module
+  full_name = __package__ + "." + module_name
+  try:
+    return sys.modules[full_name]
+  except KeyError:
+    raise RuntimeError(
+      f"Module {full_name} is not loaded. Did you forget to add `from . import {module_name}`?"
+    )
 
 
 def training_fn():
-  X, y = data.get_dataframe()
-  m = models.get_model()
-  model_training_module = _get_model_training_module()
+  x, y = data.get_numpy()
+  model_training_module = _get_training_module()
   actual_training_fn = getattr(
     model_training_module, FLAGS.train_mode.name.lower()
   )
-  return actual_training_fn(X, y)
+  return actual_training_fn(x, y)
