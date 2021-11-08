@@ -8,6 +8,7 @@ from . import tasks
 
 FLAGS = flags.FLAGS
 
+
 @gin.configurable
 class {{cookiecutter.model}}(tf.keras.Model):
 
@@ -64,5 +65,9 @@ def get_multiclass_model(num_classes: int = {{cookiecutter.num_classes}}, **kwar
     {{cookiecutter.model}}(**kwargs),
     tf.keras.layers.Dense(num_classes, activation="softmax"),
   ])
-  model.compile(loss="SparseCategoricalCrossentropy", optimizer="adam", metrics=["accuracy"])
+  model.compile(
+    loss="SparseCategoricalCrossentropy",
+    optimizer="adam",
+    metrics=["accuracy"]
+  )
   return model

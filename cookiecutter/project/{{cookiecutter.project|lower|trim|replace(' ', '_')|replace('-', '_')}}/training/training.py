@@ -5,10 +5,9 @@ import sys
 
 from absl import flags
 
+from . import {{cookiecutter.model_prefix}}{{cookiecutter._training_module_suffix}}  # noqa F401 pylint: disable=unused-import
 from .. import data
 from .. import models  # noqa F401 pylint: disable=unused-import
-
-from . import {{cookiecutter.model_prefix}}{{cookiecutter._training_module_suffix}}  # noqa F401 pylint: disable=unused-import
 
 FLAGS = flags.FLAGS
 
