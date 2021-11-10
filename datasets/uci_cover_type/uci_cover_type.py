@@ -1,3 +1,6 @@
+"""Implementation of the UCI Cover Type dataset.
+"""
+
 from .. import dataset
 
 

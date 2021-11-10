@@ -12,4 +12,4 @@ from .movielens import Movielens25M
 from .movielens import Movielens100K
 from .movielens import MovielensLatest
 from .movielens import MovielensLatestSmall
-from .ucicovertype import UCICoverType
+from .uci_cover_type import UCICoverType
