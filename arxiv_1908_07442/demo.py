@@ -19,8 +19,8 @@ from absl import flags
 import numpy as np
 import tensorflow as tf
 
-from ..common import utils
 from . import training
+from ..common import utils
 
 FLAGS = flags.FLAGS
 
