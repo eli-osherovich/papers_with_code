@@ -20,11 +20,7 @@ def _train_model(
 
 @gin.configurable
 def train(
-  X,
-  y,
-  *,
-  batch_size: int,
-  test_size: float,
+  X, y, *, batch_size: int, test_size: float, shuffle_buffer: int = 1024
 ):
   x_train, x_val, y_train, y_val = model_selection.train_test_split(
     X, y, test_size=test_size

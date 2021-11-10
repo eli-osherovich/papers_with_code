@@ -3,7 +3,6 @@
 {%- endmacro -%}
 """Implementation of the {{cookiecutter.dataset}} dataset.
 """
-import pandas as pd
 
 from .. import dataset
 

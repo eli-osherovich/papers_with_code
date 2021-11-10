@@ -19,6 +19,7 @@ from absl import flags
 import numpy as np
 import tensorflow as tf
 
+from ..common import utils
 from . import training
 
 FLAGS = flags.FLAGS
@@ -36,4 +37,5 @@ def main(argv):
 
 
 if __name__ == "__main__":
+  utils.setup_omp()
   app.run(main)
