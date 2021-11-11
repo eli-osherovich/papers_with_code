@@ -11,4 +11,4 @@ class {{cookiecutter.dataset_class}}(dataset.Dataset):
   """{{cookiecutter.dataset}} dataset."""
 
   def __init__(self) -> None:
-    super().__init__(target_columns=[{{string_to_quoted_list(cookiecutter.target_columns)}}], df_args={"skiprows": {{cookiecutter.skip_n_rows}}})
+    super().__init__(target_columns=[{{string_to_quoted_list(cookiecutter.target_columns)}}])

@@ -1,39 +1,10 @@
 import abc
 import pathlib
-import tempfile
 from typing import Optional, Union
 import zipfile
 
 import pandas as pd
-import tensorflow as tf
 import xopen
-
-_DATASETS_DIR = "pwc-datasets"
-
-
-def download_dataset(
-  ds_name: str,
-  dl_config: dict[str, str],
-  cache_dir: Union[str, pathlib.Path, None] = None,
-) -> pathlib.Path:
-  cache_dir = cache_dir or pathlib.Path(tempfile.gettempdir()) / _DATASETS_DIR
-  # Make sure it's a Path.
-  cache_dir = pathlib.Path(cache_dir)
-
-  if ds_name not in dl_config:
-    raise ValueError(
-      f"Dataset name {ds_name} cannot be found in the download config {dl_config}"  # noqa E501
-    )
-
-  cache_dir.mkdir(parents=True, exist_ok=True)
-
-  uri = dl_config[ds_name]["uri"]
-  checksum = dl_config[ds_name].get("checksum")
-
-  data_path = tf.keras.utils.get_file(
-    origin=uri, file_hash=checksum, cache_dir=cache_dir, cache_subdir="."
-  )
-  return pathlib.Path(data_path)
 
 
 class FileReader(abc.ABC):
@@ -58,7 +29,7 @@ class FileAccessor:
   ) -> None:
     self._path = pathlib.Path(path)
     self._kwargs = kwargs
-    self._name = name
+    self._name = str(name)
     self._is_re = is_re
 
   def xopen(self):

@@ -1,32 +1,16 @@
-"""Diabetes dataset schema.
+"""Diabetes dataset config.
 """
-import numpy as np
-import pandas as pd
 
-_INT_TYPE = np.int32
-_FLOAT_TYPE = np.float32
-_BOOL_TYPE = np.int32
-_CATEGORICAL_TYPE = pd.CategoricalDtype
+from .. import dataset
+from .. import utils
 
-feature_dict = {
-  # Example:
-  #
-  # "col1": _INT_TYPE,
-  # "col2": CATEGORICAL_TYPE([
-  #   "cat",
-  #   "dog",
-  #   "human",
-  #   "unknown",
-  # ])
-  "age": _FLOAT_TYPE,
-  "sex": _FLOAT_TYPE,
-  "bmi": _FLOAT_TYPE,
-  "bp": _FLOAT_TYPE,
-  "s1 tc": _FLOAT_TYPE,
-  "s2 ldl": _FLOAT_TYPE,
-  "s3 hdl": _FLOAT_TYPE,
-  "s4 tch": _FLOAT_TYPE,
-  "s5 ltg": _FLOAT_TYPE,
-  "s6 glu": _FLOAT_TYPE,
-  "target": _FLOAT_TYPE,
+# flake8: noqa: E501
+# pylint: disable=line-too-long
+
+SPLITS = {
+  "train":
+    dataset.DatasetFile(
+      uri=utils.make_uri("diabetes.csv"),
+      checksum="9af41baf65fe75e3e76283978180c9399dcc167656377219b64b793503ce7c76",
+    ),
 }

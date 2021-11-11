@@ -1,26 +1,16 @@
-"""Iris dataset schema.
+"""Iris dataset config.
 """
-import numpy as np
-import pandas as pd
 
-_INT_TYPE = np.int32
-_FLOAT_TYPE = np.float32
-_BOOL_TYPE = np.int32
-_CATEGORICAL_TYPE = pd.CategoricalDtype
+from .. import dataset
+from .. import utils
 
-feature_dict = {
-  # Example:
-  #
-  # "col1": _INT_TYPE,
-  # "col2": CATEGORICAL_TYPE([
-  #   "cat",
-  #   "dog",
-  #   "human",
-  #   "unknown",
-  # ])
-  "sepal length": _FLOAT_TYPE,
-  "sepal width": _FLOAT_TYPE,
-  "petal length": _FLOAT_TYPE,
-  "petal width": _FLOAT_TYPE,
-  "target": _INT_TYPE,
+# flake8: noqa: E501
+# pylint: disable=line-too-long
+
+SPLITS = {
+  "train":
+    dataset.DatasetFile(
+      uri=utils.make_uri("iris.csv"),
+      checksum="0ba79ae755c686ee02dfe1d2943772a46ded2433c4fde6dd7ad3b01c41ff5d3d",
+    ),
 }
