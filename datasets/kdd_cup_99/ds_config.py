@@ -1,18 +1,23 @@
 import numpy as np
 import pandas as pd
 
-_INT_TYPE = np.int32
-_FLOAT_TYPE = np.float32
-_BOOL_TYPE = np.int32
-_CATEGORICAL_TYPE = pd.api.types.CategoricalDtype
+from .. import dataset
+
+# flake8: noqa: E501
+# pylint: disable=line-too-long
+
+INT_TYPE = np.int32
+FLOAT_TYPE = np.float32
+BOOL_TYPE = np.int32
+CATEGORICAL_TYPE = pd.CategoricalDtype
 
 feature_dict = {
   "duration":
-    _INT_TYPE,
+    INT_TYPE,
   "protocol_type":
-    _CATEGORICAL_TYPE(["icmp", "tcp", "udp"]),
+    CATEGORICAL_TYPE(["icmp", "tcp", "udp"]),
   "service":
-    _CATEGORICAL_TYPE([
+    CATEGORICAL_TYPE([
       "aol",
       "auth",
       "bgp",
@@ -86,7 +91,7 @@ feature_dict = {
       "Z39_50",
     ]),
   "flag":
-    _CATEGORICAL_TYPE([
+    CATEGORICAL_TYPE([
       "OTH",
       "REJ",
       "RSTO",
@@ -100,81 +105,81 @@ feature_dict = {
       "SH",
     ]),
   "src_bytes":
-    _INT_TYPE,
+    INT_TYPE,
   "dst_bytes":
-    _INT_TYPE,
+    INT_TYPE,
   "land":
-    _BOOL_TYPE,
+    BOOL_TYPE,
   "wrong_fragment":
-    _INT_TYPE,
+    INT_TYPE,
   "urgent":
-    _INT_TYPE,
+    INT_TYPE,
   "hot":
-    _INT_TYPE,
+    INT_TYPE,
   "num_failed_logins":
-    _INT_TYPE,
+    INT_TYPE,
   "logged_in":
-    _BOOL_TYPE,
+    BOOL_TYPE,
   "num_compromised":
-    _INT_TYPE,
+    INT_TYPE,
   "root_shell":
-    _BOOL_TYPE,
+    BOOL_TYPE,
   "su_attempted":
-    _INT_TYPE,
+    INT_TYPE,
   "num_root":
-    _INT_TYPE,
+    INT_TYPE,
   "num_file_creations":
-    _INT_TYPE,
+    INT_TYPE,
   "num_shells":
-    _INT_TYPE,
+    INT_TYPE,
   "num_access_files":
-    _INT_TYPE,
+    INT_TYPE,
   "num_outbound_cmds":
-    _INT_TYPE,
+    INT_TYPE,
   "is_hot_login":
-    _BOOL_TYPE,
+    BOOL_TYPE,
   "is_guest_login":
-    _BOOL_TYPE,
+    BOOL_TYPE,
   "count":
-    _INT_TYPE,
+    INT_TYPE,
   "srv_count":
-    _INT_TYPE,
+    INT_TYPE,
   "serror_rate":
-    _FLOAT_TYPE,
+    FLOAT_TYPE,
   "srv_serror_rate":
-    _FLOAT_TYPE,
+    FLOAT_TYPE,
   "rerror_rate":
-    _FLOAT_TYPE,
+    FLOAT_TYPE,
   "srv_rerror_rate":
-    _FLOAT_TYPE,
+    FLOAT_TYPE,
   "same_srv_rate":
-    _FLOAT_TYPE,
+    FLOAT_TYPE,
   "diff_srv_rate":
-    _FLOAT_TYPE,
+    FLOAT_TYPE,
   "srv_diff_host_rate":
-    _FLOAT_TYPE,
+    FLOAT_TYPE,
   "dst_host_count":
-    _INT_TYPE,
+    INT_TYPE,
   "dst_host_srv_count":
-    _INT_TYPE,
+    INT_TYPE,
   "dst_host_same_srv_rate":
-    _FLOAT_TYPE,
+    FLOAT_TYPE,
   "dst_host_diff_srv_rate":
-    _FLOAT_TYPE,
+    FLOAT_TYPE,
   "dst_host_same_src_port_rate":
-    _FLOAT_TYPE,
+    FLOAT_TYPE,
   "dst_host_srv_diff_host_rate":
-    _FLOAT_TYPE,
+    FLOAT_TYPE,
   "dst_host_serror_rate":
-    _FLOAT_TYPE,
+    FLOAT_TYPE,
   "dst_host_srv_serror_rate":
-    _FLOAT_TYPE,
+    FLOAT_TYPE,
   "dst_host_rerror_rate":
-    _FLOAT_TYPE,
+    FLOAT_TYPE,
   "dst_host_srv_rerror_rate":
-    _FLOAT_TYPE,
+    FLOAT_TYPE,
   "label":
-    _CATEGORICAL_TYPE([
+    CATEGORICAL_TYPE([
       "apache2.",
       "back.",
       "buffer_overflow.",
@@ -216,4 +221,34 @@ feature_dict = {
       "xsnoop.",
       "xterm.",
     ]),
+}
+
+SPLITS = {
+  "train_10p":
+    dataset.DatasetFile(
+      uri="http://kdd.ics.uci.edu/databases/kddcup99/kddcup.data_10_percent.gz",
+      checksum="8045aca0d84e70e622d1148d7df782496f6333bf6eb979a1b0837c42a9fd9561",
+      file_reader_args={
+        "names": feature_dict,
+        "dtype": feature_dict
+      }
+    ),
+  "train":
+    dataset.DatasetFile(
+      uri="http://kdd.ics.uci.edu/databases/kddcup99/kddcup.data.gz",
+      checksum="3b6c942aa0356c0ca35b7b595a26c89d343652c9db428893e7494f837b274292",
+      file_reader_args={
+        "names": feature_dict,
+        "dtype": feature_dict
+      }
+    ),
+  "test":
+    dataset.DatasetFile(
+      uri="http://kdd.ics.uci.edu/databases/kddcup99/corrected.gz	",
+      checksum="abd8165508378859b07e38537271f0ebf8a4d7319f643188cd7361e939a05c43",
+      file_reader_args={
+        "names": feature_dict,
+        "dtype": feature_dict
+      }
+    ),
 }
