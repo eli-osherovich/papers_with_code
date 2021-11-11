@@ -8,4 +8,4 @@ class UCIPokerHand(dataset.Dataset):
   """UCI Poker Hand dataset."""
 
   def __init__(self) -> None:
-    super().__init__(target_columns=["Hand"], df_args={"skiprows": 0})
+    super().__init__(target_columns=["Hand"])
