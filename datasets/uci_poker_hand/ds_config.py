@@ -1,32 +1,26 @@
 """UCI Poker Hand dataset config.
 """
 
-import numpy as np
-import pandas as pd
-
 from .. import dataset
 from .. import utils
+from ..typing import FloatType
+from ..typing import IntType
 
 # flake8: noqa: E501
 # pylint: disable=line-too-long
 
-INT_TYPE = np.int32
-FLOAT_TYPE = np.float32
-BOOL_TYPE = np.int32
-CATEGORICAL_TYPE = pd.CategoricalDtype
-
 feature_dict = {
-  "S1": FLOAT_TYPE,
-  "C1": FLOAT_TYPE,
-  "S2": FLOAT_TYPE,
-  "C2": FLOAT_TYPE,
-  "S3": FLOAT_TYPE,
-  "C3": FLOAT_TYPE,
-  "S4": FLOAT_TYPE,
-  "C4": FLOAT_TYPE,
-  "S5": FLOAT_TYPE,
-  "C5": FLOAT_TYPE,
-  "Hand": INT_TYPE,
+  "S1": FloatType,
+  "C1": FloatType,
+  "S2": FloatType,
+  "C2": FloatType,
+  "S3": FloatType,
+  "C3": FloatType,
+  "S4": FloatType,
+  "C4": FloatType,
+  "S5": FloatType,
+  "C5": FloatType,
+  "Hand": IntType,
 }
 
 SPLITS = {

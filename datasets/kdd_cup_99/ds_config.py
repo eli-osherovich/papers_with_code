@@ -6,18 +6,13 @@ from .. import dataset
 # flake8: noqa: E501
 # pylint: disable=line-too-long
 
-INT_TYPE = np.int32
-FLOAT_TYPE = np.float32
-BOOL_TYPE = np.int32
-CATEGORICAL_TYPE = pd.CategoricalDtype
-
 feature_dict = {
   "duration":
-    INT_TYPE,
+    IntType,
   "protocol_type":
-    CATEGORICAL_TYPE(["icmp", "tcp", "udp"]),
+    CategoricalType(["icmp", "tcp", "udp"]),
   "service":
-    CATEGORICAL_TYPE([
+    CategoricalType([
       "aol",
       "auth",
       "bgp",
@@ -91,7 +86,7 @@ feature_dict = {
       "Z39_50",
     ]),
   "flag":
-    CATEGORICAL_TYPE([
+    CategoricalType([
       "OTH",
       "REJ",
       "RSTO",
@@ -105,81 +100,81 @@ feature_dict = {
       "SH",
     ]),
   "src_bytes":
-    INT_TYPE,
+    IntType,
   "dst_bytes":
-    INT_TYPE,
+    IntType,
   "land":
-    BOOL_TYPE,
+    BoolType,
   "wrong_fragment":
-    INT_TYPE,
+    IntType,
   "urgent":
-    INT_TYPE,
+    IntType,
   "hot":
-    INT_TYPE,
+    IntType,
   "num_failed_logins":
-    INT_TYPE,
+    IntType,
   "logged_in":
-    BOOL_TYPE,
+    BoolType,
   "num_compromised":
-    INT_TYPE,
+    IntType,
   "root_shell":
-    BOOL_TYPE,
+    BoolType,
   "su_attempted":
-    INT_TYPE,
+    IntType,
   "num_root":
-    INT_TYPE,
+    IntType,
   "num_file_creations":
-    INT_TYPE,
+    IntType,
   "num_shells":
-    INT_TYPE,
+    IntType,
   "num_access_files":
-    INT_TYPE,
+    IntType,
   "num_outbound_cmds":
-    INT_TYPE,
+    IntType,
   "is_hot_login":
-    BOOL_TYPE,
+    BoolType,
   "is_guest_login":
-    BOOL_TYPE,
+    BoolType,
   "count":
-    INT_TYPE,
+    IntType,
   "srv_count":
-    INT_TYPE,
+    IntType,
   "serror_rate":
-    FLOAT_TYPE,
+    FloatType,
   "srv_serror_rate":
-    FLOAT_TYPE,
+    FloatType,
   "rerror_rate":
-    FLOAT_TYPE,
+    FloatType,
   "srv_rerror_rate":
-    FLOAT_TYPE,
+    FloatType,
   "same_srv_rate":
-    FLOAT_TYPE,
+    FloatType,
   "diff_srv_rate":
-    FLOAT_TYPE,
+    FloatType,
   "srv_diff_host_rate":
-    FLOAT_TYPE,
+    FloatType,
   "dst_host_count":
-    INT_TYPE,
+    IntType,
   "dst_host_srv_count":
-    INT_TYPE,
+    IntType,
   "dst_host_same_srv_rate":
-    FLOAT_TYPE,
+    FloatType,
   "dst_host_diff_srv_rate":
-    FLOAT_TYPE,
+    FloatType,
   "dst_host_same_src_port_rate":
-    FLOAT_TYPE,
+    FloatType,
   "dst_host_srv_diff_host_rate":
-    FLOAT_TYPE,
+    FloatType,
   "dst_host_serror_rate":
-    FLOAT_TYPE,
+    FloatType,
   "dst_host_srv_serror_rate":
-    FLOAT_TYPE,
+    FloatType,
   "dst_host_rerror_rate":
-    FLOAT_TYPE,
+    FloatType,
   "dst_host_srv_rerror_rate":
-    FLOAT_TYPE,
+    FloatType,
   "label":
-    CATEGORICAL_TYPE([
+    CategoricalType([
       "apache2.",
       "back.",
       "buffer_overflow.",

@@ -1,26 +1,25 @@
-import numpy as np
-import pandas as pd
-
 from .. import dataset
 from .. import utils
+from ..typing import BoolType
+from ..typing import CategoricalType
+from ..typing import FloatType
+from ..typing import IntType
 
-INT_TYPE = np.int32
-FLOAT_TYPE = np.float32
-BOOL_TYPE = np.int32
-CATEGORICAL_TYPE = pd.CategoricalDtype
+# flake8: noqa: E501
+# pylint: disable=line-too-long
 
 feature_dict = {
   "checking_balance":
-    CATEGORICAL_TYPE([
+    CategoricalType([
       "< 0 DM",
       "1 - 200 DM",
       "> 200 DM",
       "unknown",
     ]),
   "months_loan_duration":
-    INT_TYPE,
+    IntType,
   "credit_history":
-    CATEGORICAL_TYPE([
+    CategoricalType([
       "critical",
       "good",
       "poor",
@@ -28,7 +27,7 @@ feature_dict = {
       "very good",
     ]),
   "purpose":
-    CATEGORICAL_TYPE([
+    CategoricalType([
       "furniture/appliances",
       "education",
       "car",
@@ -37,9 +36,9 @@ feature_dict = {
       "car0",
     ]),
   "amount":
-    INT_TYPE,
+    IntType,
   "savings_balance":
-    CATEGORICAL_TYPE([
+    CategoricalType([
       "< 100 DM",
       "100 - 500 DM",
       "500 - 1000 DM",
@@ -47,7 +46,7 @@ feature_dict = {
       "unknown",
     ]),
   "employment_duration":
-    CATEGORICAL_TYPE([
+    CategoricalType([
       "unemployed",
       "< 1 year",
       "1 - 4 years",
@@ -55,38 +54,38 @@ feature_dict = {
       "> 7 years",
     ]),
   "percent_of_income":
-    FLOAT_TYPE,
+    FloatType,
   "years_at_residence":
-    INT_TYPE,
+    IntType,
   "age":
-    INT_TYPE,
+    IntType,
   "other_credit":
-    CATEGORICAL_TYPE([
+    CategoricalType([
       "none",
       "bank",
       "store",
     ]),
   "housing":
-    CATEGORICAL_TYPE([
+    CategoricalType([
       "own",
       "rent",
       "other",
     ]),
   "existing_loans_count":
-    INT_TYPE,
+    IntType,
   "job":
-    CATEGORICAL_TYPE([
+    CategoricalType([
       "unemployed",
       "unskilled",
       "skilled",
       "management",
     ]),
   "dependents":
-    INT_TYPE,
+    IntType,
   "phone":
-    BOOL_TYPE,
+    BoolType,
   "default":
-    BOOL_TYPE,
+    BoolType,
 }
 
 SPLITS = {

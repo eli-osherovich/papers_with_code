@@ -1,20 +1,20 @@
-import numpy as np
-import pandas as pd
+from ..typing import BoolType
+from ..typing import CategoricalType
+from ..typing import FloatType
+from ..typing import IntType
 
-_INT_TYPE = np.int32
-_FLOAT_TYPE = np.float32
-_BOOL_TYPE = np.uint8
-_CATEGORICAL_TYPE = pd.api.types.CategoricalDtype
+# flake8: noqa: E501
+# pylint: disable=line-too-long
 
 feature_dict = {
   "user":
-    _INT_TYPE,
+    IntType,
   "item":
-    _INT_TYPE,
+    IntType,
   "rating":
-    _FLOAT_TYPE,
+    FloatType,
   "timestamp":
-    _INT_TYPE,
+    IntType,
   "title":
     str,
   "release date":
@@ -22,57 +22,57 @@ feature_dict = {
   "video release date":
     str,
   "release year":
-    _FLOAT_TYPE,
+    FloatType,
   "IMDb URL":
     str,
   "genres":
     str,
   "unknown":
-    _BOOL_TYPE,  # coerce with '(no genres listed)' in later datasets.
+    BoolType,  # coerce with '(no genres listed)' in later datasets.
   "Action":
-    _BOOL_TYPE,
+    BoolType,
   "Adventure":
-    _BOOL_TYPE,
+    BoolType,
   "Animation":
-    _BOOL_TYPE,
+    BoolType,
   "Children":
-    _BOOL_TYPE,
+    BoolType,
   "Comedy":
-    _BOOL_TYPE,
+    BoolType,
   "Crime":
-    _BOOL_TYPE,
+    BoolType,
   "Documentary":
-    _BOOL_TYPE,
+    BoolType,
   "Drama":
-    _BOOL_TYPE,
+    BoolType,
   "Fantasy":
-    _BOOL_TYPE,
+    BoolType,
   "Film-Noir":
-    _BOOL_TYPE,
+    BoolType,
   "Horror":
-    _BOOL_TYPE,
+    BoolType,
   "IMAX":
-    _BOOL_TYPE,
+    BoolType,
   "Musical":
-    _BOOL_TYPE,
+    BoolType,
   "Mystery":
-    _BOOL_TYPE,
+    BoolType,
   "Romance":
-    _BOOL_TYPE,
+    BoolType,
   "Sci-Fi":
-    _BOOL_TYPE,
+    BoolType,
   "Thriller":
-    _BOOL_TYPE,
+    BoolType,
   "War":
-    _BOOL_TYPE,
+    BoolType,
   "Western":
-    _BOOL_TYPE,
+    BoolType,
   "age":
-    _INT_TYPE,
+    IntType,
   "gender":
-    _CATEGORICAL_TYPE(["M", "F"]),
+    CategoricalType(["M", "F"]),
   "occupation":
-    _CATEGORICAL_TYPE([
+    CategoricalType([
       "administrator",
       "artist",
       "doctor",
@@ -96,7 +96,7 @@ feature_dict = {
       "writer",
     ]),
   "occupation_num":
-    _INT_TYPE,
+    IntType,
   "zipcode":
     str,  # A couple of zipcodes are not numerical...
 }
