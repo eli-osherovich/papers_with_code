@@ -96,7 +96,7 @@ class Dataset:
     if self._type in [DatasetType.BINARY, DatasetType.MULTICLASS
                      ] and len(self._target_columns) == 1:
       label_encoder = skl_preprocessing.LabelEncoder()
-      y[:] = label_encoder.fit_transform(y.values.ravel())
+      y[self._target_columns[0]] = label_encoder.fit_transform(y.values.ravel())
     return x, y
 
   def as_preprocessed_numpy(self, split: str) -> NP_PAIR:
