@@ -2,6 +2,12 @@
   "dataset": "My Dataset",
   "dataset_class": "{{cookiecutter.dataset.replace(' ', '').replace('-', '_')}}",
   "dataset_module": "{{cookiecutter.dataset|lower|trim|replace(' ', '_')|replace('-', '_')}}",
+  "dataset_type": [
+    "raw",
+    "regression",
+    "binary",
+    "multiclass"
+  ],
   "target_columns": "target",
   "train_file_uri": "{{cookiecutter.dataset_module}}.csv",
   "val_file_uri": "",
