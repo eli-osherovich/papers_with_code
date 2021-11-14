@@ -14,16 +14,16 @@ def cls_factory(cls, **kwargs):
     raise ValueError(f"Unable to load class called {cls}") from e
 
 
-def load_dataset(ds_cls, *splits, **kwargs) -> dataset.DS_RESULT:
+def load_dataframe(ds_cls, split: str, **kwargs):
   ds = cls_factory(ds_cls, **kwargs)
-  return ds.as_dataset(*splits)
+  return ds.as_dataframe(split)
 
 
-def load_dataframe(ds_cls, *splits, **kwargs) -> dataset.DF_RESULT:
+def load_preprocessed_dataframe(ds_cls, split: str, **kwargs):
   ds = cls_factory(ds_cls, **kwargs)
-  return ds.as_dataframe(*splits)
+  return ds.as_preprocessed_dataframe(split)
 
 
-def load_numpy(ds_cls, *splits, **kwargs) -> dataset.NP_RESULT:
+def load_preprocessed_numpy(ds_cls, split: str, **kwargs):
   ds = cls_factory(ds_cls, **kwargs)
-  return ds.as_numpy(*splits)
+  return ds.as_preprocessed_numpy(split)
