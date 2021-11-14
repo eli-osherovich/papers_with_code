@@ -3,23 +3,25 @@
 
 from .. import dataset
 from .. import utils
-from ..typing import FloatType
+from ..typing import CategoricalType
 from ..typing import IntType
 
 # flake8: noqa: E501
 # pylint: disable=line-too-long
 
+Suit = CategoricalType(range(1, 5))
+Card = CategoricalType(range(1, 14))
 feature_dict = {
-  "S1": FloatType,
-  "C1": FloatType,
-  "S2": FloatType,
-  "C2": FloatType,
-  "S3": FloatType,
-  "C3": FloatType,
-  "S4": FloatType,
-  "C4": FloatType,
-  "S5": FloatType,
-  "C5": FloatType,
+  "S1": Suit,
+  "C1": Card,
+  "S2": Suit,
+  "C2": Card,
+  "S3": Suit,
+  "C3": Card,
+  "S4": Suit,
+  "C4": Card,
+  "S5": Suit,
+  "C5": Card,
   "Hand": IntType,
 }
 
