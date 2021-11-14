@@ -4,10 +4,12 @@ from typing import Any, Optional, Union
 
 import numpy as np
 import pandas as pd
+from sklearn import preprocessing as skl_preprocessing
 import tensorflow as tf
 
 from . import io
 from . import utils
+from .typing import DatasetType
 
 DF_PAIR = tuple[pd.DataFrame, pd.DataFrame]
 DS_PAIR = tuple[tf.data.Dataset, tf.data.Dataset]
@@ -49,7 +51,13 @@ class DatasetFile:
 
 class Dataset:
 
-  def __init__(self, *, target_columns=()) -> None:
+  def __init__(
+    self,
+    *,
+    type: DatasetType = DatasetType.RAW_DATA,
+    target_columns=()
+  ) -> None:
+    self._type = type
     self._target_columns = target_columns
     self._cache = {}
 
@@ -85,7 +93,10 @@ class Dataset:
     y = x[self._target_columns]
     x = x.drop(self._target_columns, axis=1)
     x = pd.get_dummies(x, prefix_sep="__:__")
-    y = pd.get_dummies(y, prefix_sep="__:__")
+    if self._type in [DatasetType.BINARY, DatasetType.MULTICLASS
+                     ] and len(self._target_columns) == 1:
+      label_encoder = skl_preprocessing.LabelEncoder()
+      y[:] = label_encoder.fit_transform(y.values.ravel())
     return x, y
 
   def as_preprocessed_numpy(self, split: str) -> NP_PAIR:
