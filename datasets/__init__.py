@@ -14,5 +14,6 @@ from .movielens import Movielens100K
 from .movielens import MovielensLatest
 from .movielens import MovielensLatestSmall
 from .uci_cover_type import UCICoverType
+from .uci_higgs_boson import UCIHiggsBoson
 from .uci_mushroom import UCIMushroom
 from .uci_poker_hand import UCIPokerHand
