@@ -1,13 +1,14 @@
 import pandas as pd
 
 from .. import dataset
+from ..typing import DatasetType
 
 
 class MillimanDataset(dataset.Dataset):
   """Milliman dataset."""
 
   def __init__(self) -> None:
-    super().__init__(target_columns=["default"])
+    super().__init__(type=DatasetType.BINARY, target_columns=["default"])
 
 
 class MillimanDataset2(MillimanDataset):

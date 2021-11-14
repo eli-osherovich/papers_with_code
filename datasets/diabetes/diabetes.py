@@ -2,10 +2,11 @@
 """
 
 from .. import dataset
+from ..typing import DatasetType
 
 
 class Diabetes(dataset.Dataset):
   """Diabetes dataset."""
 
   def __init__(self) -> None:
-    super().__init__(target_columns=["target"])
+    super().__init__(type=DatasetType.REGRESSION, target_columns=["target"])

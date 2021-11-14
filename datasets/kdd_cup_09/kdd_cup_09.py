@@ -4,13 +4,14 @@
 import pandas as pd
 
 from .. import dataset
+from ..typing import DatasetType
 
 
 class KDDCup09(dataset.Dataset):
   """KDD Cup 09 dataset."""
 
   def __init__(self) -> None:
-    super().__init__(target_columns=["target"])
+    super().__init__(type=DatasetType.BINARY, target_columns=["target"])
 
   def as_dataframe(self, split: str) -> pd.DataFrame:
     if split == "train_churn_small":

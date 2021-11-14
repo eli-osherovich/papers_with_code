@@ -2,6 +2,10 @@ import numpy as np
 import pandas as pd
 
 from .. import dataset
+from ..typing import BoolType
+from ..typing import CategoricalType
+from ..typing import FloatType
+from ..typing import IntType
 
 # flake8: noqa: E501
 # pylint: disable=line-too-long
@@ -237,7 +241,7 @@ SPLITS = {
         "dtype": feature_dict
       }
     ),
-  "test":
+  "val":
     dataset.DatasetFile(
       uri="http://kdd.ics.uci.edu/databases/kddcup99/corrected.gz	",
       checksum="abd8165508378859b07e38537271f0ebf8a4d7319f643188cd7361e939a05c43",
