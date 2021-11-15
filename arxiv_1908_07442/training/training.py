@@ -36,9 +36,9 @@ def _get_training_module():
 
 
 def training_fn():
-  x, y = data.get_numpy()
+  data_res = data.get_data_numpy()
   model_training_module = _get_training_module()
   actual_training_fn = getattr(
     model_training_module, FLAGS.train_mode.name.lower()
   )
-  return actual_training_fn(x, y)
+  return actual_training_fn(data_res)
