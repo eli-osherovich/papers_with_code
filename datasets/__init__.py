@@ -13,6 +13,7 @@ from .movielens import Movielens25M
 from .movielens import Movielens100K
 from .movielens import MovielensLatest
 from .movielens import MovielensLatestSmall
+from .sarcos import Sarcos
 from .uci_cover_type import UCICoverType
 from .uci_higgs_boson import UCIHiggsBoson
 from .uci_mushroom import UCIMushroom
