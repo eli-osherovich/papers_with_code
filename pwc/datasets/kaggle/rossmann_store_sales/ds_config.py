@@ -1,8 +1,8 @@
 """Rossmann Store Sales dataset config.
 """
 
-from .. import dataset
-from .. import utils
+from pwc.datasets import dataset
+from pwc.datasets import utils
 
 # flake8: noqa: E501
 # pylint: disable=line-too-long
@@ -10,7 +10,7 @@ from .. import utils
 SPLITS = {
   "train":
     dataset.DatasetFile(
-      uri="https://storage.googleapis.com/kaggle-competitions-data/kaggle-v2/4594/860645/bundle/archive.zip",
+      uri="rossmann-store-sales.zip",
       checksum="52ce715e02dc70cac16b14548580d656997f5d43ce3544220d5e574d26483cf3",
       file_accessor_args={"name": "train.csv"},
       file_reader_args={
