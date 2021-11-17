@@ -136,3 +136,7 @@ dmypy.json
 
 # Models
 saved_model/
+
+# Ignore archive files
+*.zip
+*.gz
