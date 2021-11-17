@@ -26,11 +26,13 @@ class DatasetFile:
     self,
     *,
     uri: str,
+    name: str = "",
     checksum: str = "",
     file_accessor_args: Optional[dict[str, Any]] = None,
     file_reader_args: Optional[dict[str, Any]] = None,
   ) -> None:
     self.uri = utils.make_uri(uri)
+    self.name = name
     self.checksum = checksum
     self.file_accessor_args = file_accessor_args or {}
     self.file_reader_args = file_reader_args or {}
@@ -41,7 +43,7 @@ class DatasetFile:
 
   @property
   def cache(self) -> pathlib.Path:
-    return utils.download_file(self.uri)
+    return utils.download_file(self.uri, cache_subdir=self.name)
 
   def as_dataframe(self) -> pd.DataFrame:
     file_accessor = io.FileAccessor(self.cache, **self.file_accessor_args)

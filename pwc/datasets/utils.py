@@ -29,13 +29,17 @@ def download_file(
   checksum: Optional[str] = None,
   *,
   cache_dir: Union[str, pathlib.Path, None] = None,
+  cache_subdir: Union[str, pathlib.Path] = ".",
 ) -> pathlib.Path:
   cache_dir = cache_dir or pathlib.Path(tempfile.gettempdir())
   cache_dir = pathlib.Path(cache_dir)
   cache_dir.mkdir(parents=True, exist_ok=True)
 
   return tf.keras.utils.get_file(
-    origin=uri, file_hash=checksum, cache_dir=cache_dir, cache_subdir="."
+    origin=uri,
+    file_hash=checksum,
+    cache_dir=cache_dir,
+    cache_subdir=pathlib.Path(cache_subdir),
   )
 
 
