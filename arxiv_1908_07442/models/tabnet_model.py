@@ -347,22 +347,22 @@ def get_model(**kwargs) -> tf.keras.Model:
 
 
 @gin.configurable
-def get_regression_model(**kwargs) -> tf.keras.Model:
+def get_regression_model(num_classes: int = 1, **kwargs) -> tf.keras.Model:
   # Add a regression head to the main trunk.
   model = tf.keras.Sequential([
-    TabNet(**kwargs),
-    tf.keras.layers.Dense(1),
+    TabNetWrapper(**kwargs),
+    tf.keras.layers.Dense(num_classes),
   ])
   model.compile(loss="mse", optimizer="adam", metrics=["RootMeanSquaredError"])
   return model
 
 
 @gin.configurable
-def get_binary_model(**kwargs) -> tf.keras.Model:
+def get_binary_model(num_classes: int = 1, **kwargs) -> tf.keras.Model:
   # Add a binary classification head to the main trunk.
   model = tf.keras.Sequential([
-    TabNet(**kwargs),
-    tf.keras.layers.Dense(1, activation="sigmoid"),
+    TabNetWrapper(**kwargs),
+    tf.keras.layers.Dense(num_classes, activation="sigmoid"),
   ])
   model.compile(loss="bce", optimizer="adam", metrics=["accuracy"])
   return model
@@ -378,7 +378,11 @@ def get_multiclass_model(num_classes: int = 7, **kwargs) -> tf.keras.Model:
 
   model.compile(
     loss="SparseCategoricalCrossentropy",
-    optimizer="adam",
+    optimizer=tfa.optimizers.Lookahead(
+      tf.optimizers.Adam(learning_rate=0.1, amsgrad=True),
+      sync_period=10,
+      slow_step_size=0.1
+    ),
     metrics=["accuracy"]
   )
   return model

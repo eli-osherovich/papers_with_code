@@ -6,4 +6,11 @@ tabnet_model.get_multiclass_model.mask_features_dim = 32
 tabnet_model.get_multiclass_model.decision_features_dim = 32
 tabnet_model.get_multiclass_model.relaxation_factor = 1.5
 tabnet_model.get_multiclass_model.dense_args = %dense_args
-# tabnet_model.get.multiclass_model.batch_norm_args: dict[str, Any] = {}
+
+
+tabnet_model.get_regression_model.n_steps = 4
+tabnet_model.get_regression_model.shared_dense_args = %dense_args
+tabnet_model.get_regression_model.mask_features_dim = 32
+tabnet_model.get_regression_model.decision_features_dim = 32
+tabnet_model.get_regression_model.relaxation_factor = 1.5
+tabnet_model.get_regression_model.dense_args = %dense_args

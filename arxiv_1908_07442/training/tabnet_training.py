@@ -22,9 +22,16 @@ def _train_model(
 def train(data):
   train_ds, val_ds = get_ds(data)
   fit_params = {"epochs": 100000, "validation_freq": 1}
+  callbacks = [
+    tf.keras.callbacks.EarlyStopping(
+      monitor="val_loss", patience=100, restore_best_weights=True
+    )
+  ]
 
   model_ = models.get_model()
-  model_ = _train_model(model_, train_ds, val_ds=val_ds, fit_params=fit_params)
+  model_ = _train_model(
+    model_, train_ds, val_ds=val_ds, fit_params=fit_params, callbacks=callbacks
+  )
   return model_.evaluate(val_ds)
 
 

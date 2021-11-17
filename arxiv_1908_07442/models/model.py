@@ -1,7 +1,6 @@
 """A common interface to all the implemented models.
 """
 import enum
-import importlib
 import sys
 
 from absl import flags
@@ -18,6 +17,7 @@ class MODEL(enum.Enum):
 
 
 flags.DEFINE_enum_class("model", MODEL.TABNET, MODEL, "Model to use")
+flags.DEFINE_integer("num_classes", None, "Number of classes", lower_bound=1)
 
 
 def _get_model_module():
@@ -32,5 +32,7 @@ def _get_model_module():
 
 
 def get_model(**model_args) -> tf.keras.Model:
+  if FLAGS.num_classes is not None:
+    model_args["num_classes"] = FLAGS.num_classes
   model_module = _get_model_module()
   return model_module.get_model(**model_args)
