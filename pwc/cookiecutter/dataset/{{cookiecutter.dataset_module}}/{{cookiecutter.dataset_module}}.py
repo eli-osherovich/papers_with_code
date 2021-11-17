@@ -4,8 +4,8 @@
 """Implementation of the {{cookiecutter.dataset}} dataset.
 """
 
-from .. import dataset
-from ..typing import DatasetType
+from pwc.datasets import dataset
+from pwc.datasets.typing import DatasetType
 
 
 class {{cookiecutter.dataset_class}}(dataset.Dataset):

@@ -9,7 +9,7 @@ FLAGS = flags.FLAGS
 
 flags.DEFINE_string(
   "dataset",
-  default="UCICoverType",
+  default="CoverType",
   help="Dataset to use",
 )
 

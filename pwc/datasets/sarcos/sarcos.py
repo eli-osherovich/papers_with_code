@@ -1,8 +1,8 @@
 """Implementation of the Sarcos dataset.
 """
 
-from .. import dataset
-from ..typing import DatasetType
+from pwc.datasets import dataset
+from pwc.datasets.typing import DatasetType
 
 
 class Sarcos(dataset.Dataset):
