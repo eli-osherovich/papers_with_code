@@ -1,8 +1,8 @@
 """{{cookiecutter.dataset}} dataset config.
 """
 
-from .. import dataset
-from .. import utils
+from pwc.datasets import dataset
+from pwc.datasets import utils
 
 # flake8: noqa: E501
 # pylint: disable=line-too-long
