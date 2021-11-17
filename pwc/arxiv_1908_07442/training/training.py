@@ -5,9 +5,11 @@ import sys
 
 from absl import flags
 
+from pwc.arxiv_1908_07442 import data
+from pwc.arxiv_1908_07442 import \
+    models  # noqa F401 pylint: disable=unused-import
+
 from . import tabnet_training  # noqa F401 pylint: disable=unused-import
-from .. import data
-from .. import models  # noqa F401 pylint: disable=unused-import
 
 FLAGS = flags.FLAGS
 

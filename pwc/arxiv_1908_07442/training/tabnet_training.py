@@ -5,7 +5,7 @@ import gin
 from sklearn import model_selection
 import tensorflow as tf
 
-from .. import models
+from pwc.arxiv_1908_07442 import models
 
 
 def _train_model(
@@ -36,12 +36,12 @@ def train(data):
 
 
 @gin.configurable
-def train_cv(X, y):
+def train_cv(data):
   raise NotImplementedError()
 
 
 @gin.configurable
-def tune(X, y):
+def tune(data):
   raise NotImplementedError()
 
 
