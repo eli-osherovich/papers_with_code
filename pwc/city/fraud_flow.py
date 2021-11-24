@@ -2,8 +2,23 @@ import random
 from typing import Any
 
 import lightautoml
-from lightautoml.automl.presets.tabular_presets import TabularAutoML
-from lightautoml.automl.presets.tabular_presets import TabularUtilizedAutoML
+from lightautoml.automl.base import AutoML
+from lightautoml.automl.blend import WeightedBlender
+from lightautoml.dataset.roles import CategoryRole
+from lightautoml.dataset.roles import DatetimeRole
+from lightautoml.dataset.roles import FoldsRole
+from lightautoml.dataset.roles import NumericRole
+from lightautoml.dataset.roles import TargetRole
+from lightautoml.dataset.utils import roles_parser
+from lightautoml.ml_algo.boost_cb import BoostCB
+from lightautoml.ml_algo.boost_lgbm import BoostLGBM
+from lightautoml.ml_algo.linear_sklearn import LinearLBFGS
+from lightautoml.ml_algo.tuning.optuna import OptunaTuner
+from lightautoml.pipelines.features.lgb_pipeline import LGBAdvancedPipeline
+from lightautoml.pipelines.features.lgb_pipeline import LGBSimpleFeatures
+from lightautoml.pipelines.features.linear_pipeline import LinearFeatures
+from lightautoml.pipelines.ml.base import MLPipeline
+from lightautoml.reader.base import PandasToPandasReader
 import numpy as np
 import pandas as pd
 import prefect
@@ -42,7 +57,14 @@ def feature_engineering(df: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
     "nameOrig", "nameDest", "oldbalanceOrg", "newbalanceOrig", "type", "step"
   ],
                axis=1)
-
+  roles = roles_parser({
+    TargetRole(): "isFraud",
+    DatetimeRole(seasonality=["wd", "h"]): "Timestamp",
+    CategoryRole(str): "TransactionType",
+    CategoryRole(np.int32): ["MaxOut", "Overdraft", "LuckyNumber"]
+  })
+  print(df.head())
+  print(roles)
   return df, roles
 
 
@@ -94,43 +116,85 @@ def split_data(df: pd.DataFrame,
 
 
 @task
-def automl(train_df, test_df, roles, config):
-  logger = prefect.context.get("logger")
-
-  model = TabularAutoML(
-    task=lightautoml.tasks.Task("binary"),
-    timeout=config["timeout"],
-    general_params={
-      "nested_cv":
-        False,
-      "use_algos": [
-        ["lgb_tuned", "cb_tuned"],
-        ["linear_l2", "lgb_tuned", "cb_tuned"],
-      ]
-    },
-    reader_params={
-      "cv": config["cv_folds"],
-      "random_state": config["random_state"]
-    },
-    tuning_params={
-      "max_tuning_iter": 20,
-      "max_tuning_time": 30
-    },
-    lgb_params={
-      "default_params": {
-        "num_threads": config["n_threads"],
-        "early_stopping_rounds": 20,
-      }
-    },
+def first_level_pipeline(config) -> list[MLPipeline]:
+  lgbm_tuner = OptunaTuner(n_trials=20, timeout=3600, fit_on_holdout=False)
+  cb_tuner = OptunaTuner(n_trials=20, timeout=3600, fit_on_holdout=False)
+  lgbm_model0 = BoostLGBM(
+    default_params={
+      "random_state": 0,
+      "num_leaves": 128,
+      "num_trees": 1000,
+      "learning_rate": 0.05,
+      "num_threads": config["n_threads"],
+    }
   )
+  lgbm_model1 = BoostLGBM(
+    default_params={
+      "random_state": 2,
+      "learning_rate": 0.025,
+      "num_leaves": 64,
+      "num_trees": 1000,
+      "num_threads": config["n_threads"],
+    }
+  )
+  cb_model0 = BoostCB(
+    default_params={
+      "random_state": 1,
+      "learning_rate": 0.025,
+      "num_trees": 1000,
+      "thread_count": config["n_threads"],
+    }
+  )
+
+  gbt_pipeline = MLPipeline(
+    [
+      # (model0, lgbm_tuner),
+      # (model1, cb_tuner),
+      lgbm_model0,
+      lgbm_model1,
+      cb_model0,
+    ],
+    features_pipeline=LGBSimpleFeatures(),
+  )
+
+  linear_pipeline = MLPipeline(
+    [LinearLBFGS()],
+    features_pipeline=LinearFeatures(),
+  )
+  return [gbt_pipeline, linear_pipeline]
+
+
+@task
+def second_level_pipeline(config) -> list[MLPipeline]:
+
+  return [MLPipeline([LinearLBFGS()])]
+
+
+@task
+def get_model(pipelines, config):
+  task = lightautoml.tasks.Task("binary")
+  reader = PandasToPandasReader(
+    task, cv=config["cv_folds"], random_state=config["random_state"]
+  )
+
+  return AutoML(reader, pipelines)
+
+
+@task
+def train(model, train_df, test_df, roles, config):
+  logger = prefect.context.get("logger")
 
   oof_pred = model.fit_predict(train_df, roles=roles, verbose=3)
   test_pred = model.predict(test_df)
+
   logger.info(
-    f"OOF score: {roc_auc_score(train_df[config['target']], oof_pred.data[:, 0])}"
+    f"OOF score: "
+    f"{roc_auc_score(train_df[config['target']].values, oof_pred.data[:, 0])}"
   )
+
   logger.info(
-    f"TEST score: {roc_auc_score(test_df[config['target']], test_pred.data[:, 0])}"
+    f"TEST score: "
+    f"{roc_auc_score(test_df[config['target']].values, test_pred.data[:, 0])}"
   )
 
 
@@ -140,5 +204,8 @@ with Flow("AutoML", result=result) as flow_automl:
   init(config)
   df, roles = load_data()
   train_df, test_df = split_data(df, config)
-  automl(train_df, test_df, roles, config)
+  level1 = first_level_pipeline(config)
+  level2 = second_level_pipeline(config)
+  model = get_model([level1, level2], config)
+  train(model, train_df, test_df, roles, config)
 flow_automl.run()
