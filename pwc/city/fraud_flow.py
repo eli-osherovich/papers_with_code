@@ -117,42 +117,70 @@ def split_data(df: pd.DataFrame,
 
 @task
 def first_level_pipeline(config) -> list[MLPipeline]:
-  lgbm_tuner = OptunaTuner(n_trials=20, timeout=3600, fit_on_holdout=False)
-  cb_tuner = OptunaTuner(n_trials=20, timeout=3600, fit_on_holdout=False)
   lgbm_model0 = BoostLGBM(
     default_params={
-      "random_state": 0,
-      "num_leaves": 128,
-      "num_trees": 1000,
-      "learning_rate": 0.05,
-      "num_threads": config["n_threads"],
-    }
-  )
-  lgbm_model1 = BoostLGBM(
-    default_params={
-      "random_state": 2,
+      "boosting": "gbdt",
+      "early_stopping_rounds": 25,
       "learning_rate": 0.025,
       "num_leaves": 64,
-      "num_trees": 1000,
       "num_threads": config["n_threads"],
+      "num_trees": 200,
+      "random_state": 0,
     }
   )
+
+  lgbm_model1 = BoostLGBM(
+    default_params={
+      "boosting": "dart",
+      "learning_rate": 0.025,
+      "num_leaves": 64,
+      "num_threads": config["n_threads"],
+      "num_trees": 200,
+      "random_state": 1,
+    }
+  )
+
+  lgbm_model2 = BoostLGBM(
+    default_params={
+      "boosting": "rf",
+      "early_stopping_rounds": 25,
+      "learning_rate": 0.025,
+      "num_leaves": 64,
+      "num_threads": config["n_threads"],
+      "num_trees": 200,
+      "random_state": 2,
+    }
+  )
+
+  lgbm_model3 = BoostLGBM(
+    default_params={
+      "boosting": "goss",
+      "bagging_freq": 0,  # GOSS does not support bagging.
+      "early_stopping_rounds": 25,
+      "learning_rate": 0.025,
+      "num_leaves": 64,
+      "num_threads": config["n_threads"],
+      "num_trees": 200,
+      "random_state": 3,
+    }
+  )
+
   cb_model0 = BoostCB(
     default_params={
-      "random_state": 1,
       "learning_rate": 0.025,
-      "num_trees": 1000,
+      "num_trees": 200,
+      "random_state": 42,
       "thread_count": config["n_threads"],
     }
   )
 
   gbt_pipeline = MLPipeline(
     [
-      # (model0, lgbm_tuner),
-      # (model1, cb_tuner),
-      lgbm_model0,
-      lgbm_model1,
-      cb_model0,
+      (cb_model0, OptunaTuner(n_trials=25, timeout=3600)),
+      (lgbm_model0, OptunaTuner(n_trials=25, timeout=3600)),
+      (lgbm_model1, OptunaTuner(n_trials=25, timeout=3600)),
+      (lgbm_model2, OptunaTuner(n_trials=25, timeout=3600)),
+      (lgbm_model3, OptunaTuner(n_trials=25, timeout=3600)),
     ],
     features_pipeline=LGBSimpleFeatures(),
   )
