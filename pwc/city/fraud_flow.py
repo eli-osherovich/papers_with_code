@@ -1,6 +1,7 @@
 import random
 from typing import Any
 
+from absl import flags
 import lightautoml
 from lightautoml.automl.base import AutoML
 from lightautoml.dataset.roles import CategoryRole
@@ -10,7 +11,8 @@ from lightautoml.ml_algo.boost_cb import BoostCB
 from lightautoml.ml_algo.boost_lgbm import BoostLGBM
 from lightautoml.ml_algo.linear_sklearn import LinearLBFGS
 from lightautoml.ml_algo.tuning.optuna import OptunaTuner
-from lightautoml.pipelines.features.lgb_pipeline import LGBAdvancedPipeline, LGBSimpleFeatures
+from lightautoml.pipelines.features.lgb_pipeline import LGBAdvancedPipeline
+from lightautoml.pipelines.features.lgb_pipeline import LGBSimpleFeatures
 from lightautoml.pipelines.features.linear_pipeline import LinearFeatures
 from lightautoml.pipelines.ml.base import MLPipeline
 from lightautoml.reader.base import PandasToPandasReader
@@ -27,6 +29,8 @@ import tensorflow as tf
 import torch
 
 from pwc.datasets import SyntheticFraudDetection
+
+FLAGS = flags.FLAGS
 
 
 @task
@@ -79,7 +83,7 @@ def load_config() -> dict[str, Any]:
     "n_threads": psutil.cpu_count(logical=False),
     "test_size": 0.2,
     "random_state": 42,
-    "cv_folds": 5,
+    "cv_folds": FLAGS.cv_folds,
     "timeout": 3600,
   }
   logger.info(f"Setting target column to {config['target']}")
@@ -113,7 +117,7 @@ def first_level_pipeline(config) -> list[MLPipeline]:
       "learning_rate": 0.025,
       "num_leaves": 64,
       "num_threads": config["n_threads"],
-      "num_trees": 200,
+      "num_trees": FLAGS.max_trees,
       "random_state": 0,
     }
   )
@@ -125,7 +129,7 @@ def first_level_pipeline(config) -> list[MLPipeline]:
       "learning_rate": 0.025,
       "num_leaves": 64,
       "num_threads": config["n_threads"],
-      "num_trees": 200,
+      "num_trees": FLAGS.max_trees,
       "random_state": 1,
     }
   )
@@ -137,7 +141,7 @@ def first_level_pipeline(config) -> list[MLPipeline]:
       "learning_rate": 0.025,
       "num_leaves": 64,
       "num_threads": config["n_threads"],
-      "num_trees": 200,
+      "num_trees": FLAGS.max_trees,
       "random_state": 2,
     }
   )
@@ -150,7 +154,7 @@ def first_level_pipeline(config) -> list[MLPipeline]:
       "learning_rate": 0.025,
       "num_leaves": 64,
       "num_threads": config["n_threads"],
-      "num_trees": 200,
+      "num_trees": FLAGS.max_trees,
       "random_state": 3,
     }
   )
@@ -158,7 +162,7 @@ def first_level_pipeline(config) -> list[MLPipeline]:
   cb_model0 = BoostCB(
     default_params={
       "learning_rate": 0.025,
-      "num_trees": 200,
+      "num_trees": FLAGS.max_trees,
       "random_state": 4,
       "thread_count": config["n_threads"],
     }
@@ -168,23 +172,43 @@ def first_level_pipeline(config) -> list[MLPipeline]:
     [
       (
         cb_model0,
-        OptunaTuner(n_trials=150, timeout=3600, fit_on_holdout=False),
+        OptunaTuner(
+          n_trials=FLAGS.trials,
+          timeout=config["timeout"],
+          fit_on_holdout=False
+        ),
       ),
       (
         lgbm_model0,
-        OptunaTuner(n_trials=150, timeout=3600, fit_on_holdout=False),
+        OptunaTuner(
+          n_trials=FLAGS.trials,
+          timeout=config["timeout"],
+          fit_on_holdout=False
+        ),
       ),
       (
         lgbm_model1,
-        OptunaTuner(n_trials=150, timeout=3600, fit_on_holdout=False),
+        OptunaTuner(
+          n_trials=FLAGS.trials,
+          timeout=config["timeout"],
+          fit_on_holdout=False
+        ),
       ),
       (
         lgbm_model2,
-        OptunaTuner(n_trials=150, timeout=3600, fit_on_holdout=False),
+        OptunaTuner(
+          n_trials=FLAGS.trials,
+          timeout=config["timeout"],
+          fit_on_holdout=False
+        ),
       ),
       (
         lgbm_model3,
-        OptunaTuner(n_trials=150, timeout=3600, fit_on_holdout=False),
+        OptunaTuner(
+          n_trials=FLAGS.trials,
+          timeout=config["timeout"],
+          fit_on_holdout=False
+        ),
       ),
     ],
     features_pipeline=LGBSimpleFeatures(),
@@ -242,4 +266,3 @@ with Flow("AutoML", result=result) as flow_automl:
   level2 = second_level_pipeline(config)
   model = get_model([level1, level2], config)
   train(model, train_df, test_df, roles, config)
-flow_automl.run()
