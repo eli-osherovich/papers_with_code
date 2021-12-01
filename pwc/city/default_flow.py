@@ -45,6 +45,20 @@ def load_data() -> tuple[pd.DataFrame, dict]:
 def feature_engineering(df: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
   df = df[df["CODE_GENDER"] != "XNA"]
   df["DAYS_EMPLOYED"].replace(365243, np.nan, inplace=True)
+  df["NEW_CREDIT_TO_ANNUITY_RATIO"] = df["AMT_CREDIT"] / df["AMT_ANNUITY"]
+  df["NEW_CREDIT_TO_GOODS_RATIO"] = df["AMT_CREDIT"] / df["AMT_GOODS_PRICE"]
+  df["NEW_INC_PER_CHLD"] = df["AMT_INCOME_TOTAL"] / (1 + df["CNT_CHILDREN"])
+  df["NEW_EMPLOY_TO_BIRTH_RATIO"] = df["DAYS_EMPLOYED"] / df["DAYS_BIRTH"]
+  df["NEW_ANNUITY_TO_INCOME_RATIO"
+    ] = df["AMT_ANNUITY"] / (1 + df["AMT_INCOME_TOTAL"])
+  df["NEW_CAR_TO_BIRTH_RATIO"] = df["OWN_CAR_AGE"] / df["DAYS_BIRTH"]
+  df["NEW_CAR_TO_EMPLOY_RATIO"] = df["OWN_CAR_AGE"] / df["DAYS_EMPLOYED"]
+  df["NEW_PHONE_TO_BIRTH_RATIO"
+    ] = df["DAYS_LAST_PHONE_CHANGE"] / df["DAYS_BIRTH"]
+  df["NEW_PHONE_TO_BIRTH_RATIO_EMPLOYER"
+    ] = df["DAYS_LAST_PHONE_CHANGE"] / df["DAYS_EMPLOYED"]
+  df["NEW_CREDIT_TO_INCOME_RATIO"] = df["AMT_CREDIT"] / df["AMT_INCOME_TOTAL"]
+
   roles = {"target": "TARGET"}
 
   return df, roles
@@ -239,7 +253,7 @@ with Flow("AutoML", result=result) as flow_automl:
   config = load_config()
   init(config)
   df, roles = load_data()
-  # df, roles = feature_engineering(df)
+  df, roles = feature_engineering(df)
   train_df, test_df = split_data(df, config)
   level1 = first_level_pipeline(config)
   level2 = second_level_pipeline(config)
