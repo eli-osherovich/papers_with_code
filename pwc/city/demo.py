@@ -3,8 +3,6 @@
 from absl import app
 from absl import flags
 
-from pwc.common import utils
-
 FLAGS = flags.FLAGS
 
 flags.DEFINE_enum("dataset", "fraud", ["fraud", "default"], "Dataset to use")
@@ -29,5 +27,4 @@ def main(argv):
 
 
 if __name__ == "__main__":
-  utils.setup_omp()
   app.run(main)
