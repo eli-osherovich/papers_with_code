@@ -13,3 +13,4 @@ from .movielens import Movielens100K
 from .movielens import MovielensLatest
 from .movielens import MovielensLatestSmall
 from .sarcos import Sarcos
+from .heloc import HELOC
