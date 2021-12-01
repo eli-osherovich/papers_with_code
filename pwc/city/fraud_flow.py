@@ -3,19 +3,14 @@ from typing import Any
 
 import lightautoml
 from lightautoml.automl.base import AutoML
-from lightautoml.automl.blend import WeightedBlender
 from lightautoml.dataset.roles import CategoryRole
 from lightautoml.dataset.roles import DatetimeRole
-from lightautoml.dataset.roles import FoldsRole
-from lightautoml.dataset.roles import NumericRole
 from lightautoml.dataset.roles import TargetRole
-from lightautoml.dataset.utils import roles_parser
 from lightautoml.ml_algo.boost_cb import BoostCB
 from lightautoml.ml_algo.boost_lgbm import BoostLGBM
 from lightautoml.ml_algo.linear_sklearn import LinearLBFGS
 from lightautoml.ml_algo.tuning.optuna import OptunaTuner
-from lightautoml.pipelines.features.lgb_pipeline import LGBAdvancedPipeline
-from lightautoml.pipelines.features.lgb_pipeline import LGBSimpleFeatures
+from lightautoml.pipelines.features.lgb_pipeline import LGBAdvancedPipeline, LGBSimpleFeatures
 from lightautoml.pipelines.features.linear_pipeline import LinearFeatures
 from lightautoml.pipelines.ml.base import MLPipeline
 from lightautoml.reader.base import PandasToPandasReader
@@ -45,26 +40,20 @@ def load_data() -> tuple[pd.DataFrame, dict]:
 @task
 def feature_engineering(df: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
   df["MaxOut"] = df.amount == df.oldbalanceOrg
-  df["Overdraft"] = df.amount > df.oldbalanceOrg
   df["TransactionType"] = (
-    df.nameOrig.apply(lambda x: x[0]) + df.nameDest.apply(lambda x: x[0])
+    df.nameOrig.apply(lambda x: x[0]) + "->" +
+    df.nameDest.apply(lambda x: x[0])
   )
-  df["LuckyNumber"] = df.amount == 10000000
   df["Timestamp"] = df.step.apply(
     lambda s: pd.Timestamp("2021") + pd.Timedelta(f"{s}h")
   )
-  df = df.drop([
-    "nameOrig", "nameDest", "oldbalanceOrg", "newbalanceOrig", "type", "step"
-  ],
-               axis=1)
-  roles = roles_parser({
+  df = df.drop(["nameOrig", "nameDest", "type", "step"], axis=1)
+  roles = {
     TargetRole(): "isFraud",
-    DatetimeRole(seasonality=["wd", "h"]): "Timestamp",
+    DatetimeRole(seasonality=["wd", "hour"], country="Nigeria"): "Timestamp",
     CategoryRole(str): "TransactionType",
-    CategoryRole(np.int32): ["MaxOut", "Overdraft", "LuckyNumber"]
-  })
-  print(df.head())
-  print(roles)
+    CategoryRole(np.int32, label_encoded=True): ["MaxOut", "MillionDollar"]
+  }
   return df, roles
 
 
@@ -132,6 +121,7 @@ def first_level_pipeline(config) -> list[MLPipeline]:
   lgbm_model1 = BoostLGBM(
     default_params={
       "boosting": "dart",
+      # "early_stopping_rounds": 25, Not supported in DART
       "learning_rate": 0.025,
       "num_leaves": 64,
       "num_threads": config["n_threads"],
@@ -169,18 +159,33 @@ def first_level_pipeline(config) -> list[MLPipeline]:
     default_params={
       "learning_rate": 0.025,
       "num_trees": 200,
-      "random_state": 42,
+      "random_state": 4,
       "thread_count": config["n_threads"],
     }
   )
 
   gbt_pipeline = MLPipeline(
     [
-      (cb_model0, OptunaTuner(n_trials=25, timeout=3600)),
-      (lgbm_model0, OptunaTuner(n_trials=25, timeout=3600)),
-      (lgbm_model1, OptunaTuner(n_trials=25, timeout=3600)),
-      (lgbm_model2, OptunaTuner(n_trials=25, timeout=3600)),
-      (lgbm_model3, OptunaTuner(n_trials=25, timeout=3600)),
+      (
+        cb_model0,
+        OptunaTuner(n_trials=150, timeout=3600, fit_on_holdout=False),
+      ),
+      (
+        lgbm_model0,
+        OptunaTuner(n_trials=150, timeout=3600, fit_on_holdout=False),
+      ),
+      (
+        lgbm_model1,
+        OptunaTuner(n_trials=150, timeout=3600, fit_on_holdout=False),
+      ),
+      (
+        lgbm_model2,
+        OptunaTuner(n_trials=150, timeout=3600, fit_on_holdout=False),
+      ),
+      (
+        lgbm_model3,
+        OptunaTuner(n_trials=150, timeout=3600, fit_on_holdout=False),
+      ),
     ],
     features_pipeline=LGBSimpleFeatures(),
   )
@@ -194,7 +199,7 @@ def first_level_pipeline(config) -> list[MLPipeline]:
 
 @task
 def second_level_pipeline(config) -> list[MLPipeline]:
-
+  del config  # not used
   return [MLPipeline([LinearLBFGS()])]
 
 
@@ -231,6 +236,7 @@ with Flow("AutoML", result=result) as flow_automl:
   config = load_config()
   init(config)
   df, roles = load_data()
+  df, roles = feature_engineering(df)
   train_df, test_df = split_data(df, config)
   level1 = first_level_pipeline(config)
   level2 = second_level_pipeline(config)
