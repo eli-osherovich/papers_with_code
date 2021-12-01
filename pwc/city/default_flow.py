@@ -190,7 +190,7 @@ def first_level_pipeline(config) -> list[MLPipeline]:
       #   ),
       # ),
     ],
-    features_pipeline=LGBSimpleFeatures(),
+    features_pipeline=LGBAdvancedPipeline(),
   )
 
   linear_pipeline = MLPipeline(
