@@ -43,6 +43,7 @@ def load_data() -> tuple[dict[str, pd.DataFrame], dict]:
   data["bureau"] = ds.as_dataframe("bureau")
   data["bureau_balance"] = ds.as_dataframe("bureau_balance")
   data["pos_cache_balance"] = ds.as_dataframe("pos_cache_balance")
+  data["credit_card_balance"] = ds.as_dataframe("credit_card_balance")
 
   roles = {"target": "TARGET", "drop": "SK_ID_CURR"}
   return data, roles
@@ -218,7 +219,7 @@ def feature_engineering(
 
     return bureau_agg
 
-  def gen_pos_features(num_rows=None, nan_as_category=True):
+  def gen_pos_features():
     pos = data["pos_cache_balance"]
     # Features
     aggregations = {
@@ -235,6 +236,18 @@ def feature_engineering(
 
     return pos_agg
 
+  # Preprocess credit_card_balance.csv
+  def gen_credit_card_features():
+    cc = data["credit_card_balance"]
+    # General aggregations
+    cc.drop(["SK_ID_PREV"], axis=1, inplace=True)
+    cc_agg = cc.groupby("SK_ID_CURR").agg(["max", "mean", "sum", "var"])
+    cc_agg.columns = ["CC_" + e[0] + "_" + e[1].upper() for e in cc_agg.columns]
+    # Count credit card lines
+    cc_agg["CC_COUNT"] = cc.groupby("SK_ID_CURR").size()
+
+    return cc_agg
+
   for df in data.values():
     set_nans(df)
 
@@ -248,6 +261,9 @@ def feature_engineering(
   )
   df = df.join(gen_bureau_features(), on="SK_ID_CURR", rsuffix="BUREAU_")
   df = df.join(gen_pos_features(), on="SK_ID_CURR", rsuffix="POS_")
+  df = df.join(
+    gen_credit_card_features(), on="SK_ID_CURR", rsuffix="CREDIT_CARD_"
+  )
   # Roles
   roles = {"target": "TARGET"}
 
