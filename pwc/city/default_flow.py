@@ -39,6 +39,7 @@ def load_data() -> tuple[dict[str, pd.DataFrame], dict]:
   data = {}
   data["train"] = ds.as_dataframe("train")
   data["previous_application"] = ds.as_dataframe("previous_application")
+  data["installments_payments"] = ds.as_dataframe("installments_payments")
   roles = {"target": "TARGET", "drop": "SK_ID_CURR"}
   return data, roles
 
@@ -129,6 +130,38 @@ def feature_engineering(
     df["NEW_CREDIT_TO_INCOME_RATIO"] = df["AMT_CREDIT"] / df["AMT_INCOME_TOTAL"]
     return df
 
+  def gen_installment_features():
+    ins = data["installments_payments"]
+
+    # Percentage and difference paid in each installment (amount paid and installment value)
+    ins["PAYMENT_PERC"] = ins["AMT_PAYMENT"] / ins["AMT_INSTALMENT"]
+    ins["PAYMENT_DIFF"] = ins["AMT_INSTALMENT"] - ins["AMT_PAYMENT"]
+
+    # Days past due and days before due (no negative values)
+    ins["DPD"] = ins["DAYS_ENTRY_PAYMENT"] - ins["DAYS_INSTALMENT"]
+    ins["DBD"] = ins["DAYS_INSTALMENT"] - ins["DAYS_ENTRY_PAYMENT"]
+    ins["DPD"] = ins["DPD"].apply(lambda x: x if x > 0 else 0)
+    ins["DBD"] = ins["DBD"].apply(lambda x: x if x > 0 else 0)
+    # Features: Perform aggregations
+    aggregations = {
+      "NUM_INSTALMENT_VERSION": ["nunique"],
+      "DPD": ["max", "mean", "sum", "min", "std"],
+      "DBD": ["max", "mean", "sum", "min", "std"],
+      "PAYMENT_PERC": ["max", "mean", "var", "min", "std"],
+      "PAYMENT_DIFF": ["max", "mean", "var", "min", "std"],
+      "AMT_INSTALMENT": ["max", "mean", "sum", "min", "std"],
+      "AMT_PAYMENT": ["min", "max", "mean", "sum", "std"],
+      "DAYS_ENTRY_PAYMENT": ["max", "mean", "sum", "std"]
+    }
+
+    ins_agg = ins.groupby("SK_ID_CURR").agg(aggregations)
+    ins_agg.columns = [
+      "INSTAL_" + e[0] + "_" + e[1].upper() for e in ins_agg.columns
+    ]
+    # Count installments accounts
+    ins_agg["INSTAL_COUNT"] = ins.groupby("SK_ID_CURR").size()
+    return ins_agg
+
   for df in data.values():
     set_nans(df)
 
@@ -137,6 +170,9 @@ def feature_engineering(
   df = gen_new_features(df)
   df = df.join(previous_app_counts(), on="SK_ID_CURR", rsuffix="PREV_")
   df = df.join(previous_app_agg(), on="SK_ID_CURR", rsuffix="PREV_")
+  df = df.join(
+    gen_installment_features(), on="SK_ID_CURR", rsuffix="INSTALLMENT_"
+  )
 
   # Roles
   roles = {"target": "TARGET"}
