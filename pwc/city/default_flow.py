@@ -40,6 +40,8 @@ def load_data() -> tuple[dict[str, pd.DataFrame], dict]:
   data["train"] = ds.as_dataframe("train")
   data["previous_application"] = ds.as_dataframe("previous_application")
   data["installments_payments"] = ds.as_dataframe("installments_payments")
+  data["bureau"] = ds.as_dataframe("bureau")
+  data["bureau_balance"] = ds.as_dataframe("bureau_balance")
   roles = {"target": "TARGET", "drop": "SK_ID_CURR"}
   return data, roles
 
@@ -162,6 +164,58 @@ def feature_engineering(
     ins_agg["INSTAL_COUNT"] = ins.groupby("SK_ID_CURR").size()
     return ins_agg
 
+  def gen_bureau_features():
+    bureau = data["bureau"]
+    bb = data["bureau_balance"]
+
+    # Bureau balance: Perform aggregations and merge with bureau.csv
+    bb_aggregations = {"MONTHS_BALANCE": ["min", "max", "size"]}
+    bb_agg = bb.groupby("SK_ID_BUREAU").agg(bb_aggregations)
+    bb_agg.columns = [e[0] + "_" + e[1].upper() for e in bb_agg.columns]
+    bureau = bureau.join(bb_agg, how="left", on="SK_ID_BUREAU")
+    bureau.drop(["SK_ID_BUREAU"], axis=1, inplace=True)
+
+    # Bureau and bureau_balance numeric features
+    num_aggregations = {
+      "DAYS_CREDIT": ["mean", "var"],
+      "DAYS_CREDIT_ENDDATE": ["mean"],
+      "DAYS_CREDIT_UPDATE": ["mean"],
+      "CREDIT_DAY_OVERDUE": ["mean"],
+      "AMT_CREDIT_MAX_OVERDUE": ["mean"],
+      "AMT_CREDIT_SUM": ["mean", "sum"],
+      "AMT_CREDIT_SUM_DEBT": ["mean", "sum"],
+      "AMT_CREDIT_SUM_OVERDUE": ["mean"],
+      "AMT_CREDIT_SUM_LIMIT": ["mean", "sum"],
+      "AMT_ANNUITY": ["max", "mean"],
+      "CNT_CREDIT_PROLONG": ["sum"],
+      "MONTHS_BALANCE_MIN": ["min"],
+      "MONTHS_BALANCE_MAX": ["max"],
+      "MONTHS_BALANCE_SIZE": ["mean", "sum"]
+    }
+
+    bureau_agg = bureau.groupby("SK_ID_CURR").agg(num_aggregations)
+    bureau_agg.columns = [
+      "BUREAU_" + e[0] + "_" + e[1].upper() for e in bureau_agg.columns
+    ]
+
+    # Bureau: Active credits - using only numerical aggregations
+    active = bureau[bureau["CREDIT_ACTIVE"] == "Active"]
+    active_agg = active.groupby("SK_ID_CURR").agg(num_aggregations)
+    active_agg.columns = pd.Index([
+      "ACTIVE_" + e[0] + "_" + e[1].upper() for e in active_agg.columns.tolist()
+    ])
+    bureau_agg = bureau_agg.join(active_agg, how="left", on="SK_ID_CURR")
+
+    # Bureau: Closed credits - using only numerical aggregations
+    closed = bureau[bureau["CREDIT_ACTIVE"] == "Closed"]
+    closed_agg = closed.groupby("SK_ID_CURR").agg(num_aggregations)
+    closed_agg.columns = pd.Index([
+      "CLOSED_" + e[0] + "_" + e[1].upper() for e in closed_agg.columns.tolist()
+    ])
+    bureau_agg = bureau_agg.join(closed_agg, how="left", on="SK_ID_CURR")
+
+    return bureau_agg
+
   for df in data.values():
     set_nans(df)
 
@@ -173,6 +227,7 @@ def feature_engineering(
   df = df.join(
     gen_installment_features(), on="SK_ID_CURR", rsuffix="INSTALLMENT_"
   )
+  df = df.join(gen_bureau_features(), on="SK_ID_CURR", rsuffix="BUREAU_")
 
   # Roles
   roles = {"target": "TARGET"}
