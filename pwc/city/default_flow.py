@@ -381,6 +381,9 @@ def first_level_pipeline(config) -> list[MLPipeline]:
     [
       cb_model0,
       lgbm_model0,
+      lgbm_model1,
+      lgbm_model2,
+      lgbm_model3,
       # (
       #   cb_model0,
       #   OptunaTuner(
