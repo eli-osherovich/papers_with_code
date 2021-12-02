@@ -42,6 +42,8 @@ def load_data() -> tuple[dict[str, pd.DataFrame], dict]:
   data["installments_payments"] = ds.as_dataframe("installments_payments")
   data["bureau"] = ds.as_dataframe("bureau")
   data["bureau_balance"] = ds.as_dataframe("bureau_balance")
+  data["pos_cache_balance"] = ds.as_dataframe("pos_cache_balance")
+
   roles = {"target": "TARGET", "drop": "SK_ID_CURR"}
   return data, roles
 
@@ -216,6 +218,23 @@ def feature_engineering(
 
     return bureau_agg
 
+  def gen_pos_features(num_rows=None, nan_as_category=True):
+    pos = data["pos_cache_balance"]
+    # Features
+    aggregations = {
+      "MONTHS_BALANCE": ["max", "mean", "size"],
+      "SK_DPD": ["max", "mean"],
+      "SK_DPD_DEF": ["max", "mean"]
+    }
+    pos_agg = pos.groupby("SK_ID_CURR").agg(aggregations)
+    pos_agg.columns = [
+      "POS_" + e[0] + "_" + e[1].upper() for e in pos_agg.columns
+    ]
+    # Count pos cash accounts
+    pos_agg["POS_COUNT"] = pos.groupby("SK_ID_CURR").size()
+
+    return pos_agg
+
   for df in data.values():
     set_nans(df)
 
@@ -228,7 +247,7 @@ def feature_engineering(
     gen_installment_features(), on="SK_ID_CURR", rsuffix="INSTALLMENT_"
   )
   df = df.join(gen_bureau_features(), on="SK_ID_CURR", rsuffix="BUREAU_")
-
+  df = df.join(gen_pos_features(), on="SK_ID_CURR", rsuffix="POS_")
   # Roles
   roles = {"target": "TARGET"}
 
