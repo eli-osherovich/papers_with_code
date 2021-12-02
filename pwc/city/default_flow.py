@@ -56,9 +56,6 @@ def feature_engineering(
     # Replace NaN substitutes with proper NaNs
     df.replace(["XNA", 365243], np.nan, inplace=True)
 
-  for df in data.values():
-    set_nans(df)
-
   def previous_app_counts():
     prev = data["previous_application"]
 
@@ -87,17 +84,21 @@ def feature_engineering(
     res.columns = [f"{c[0]}_{c[1]}" for c in res.columns]
     return res
 
-  def gen_new_features(df):
-
-    for feat in ["OCCUPATION", "ORGANIZATION"]:
-      orig_col = f"{feat}_TYPE"
-      new_feat_col = f"NEW_INC_BY_{feat}"
+  def gen_population_features(df):
+    for feat in [
+      "NAME_CONTRACT_TYPE", "CODE_GENDER", "CNT_CHILDREN", "NAME_INCOME_TYPE",
+      "NAME_FAMILY_STATUS", "OCCUPATION_TYPE", "CNT_FAM_MEMBERS",
+      "ORGANIZATION_TYPE"
+    ]:
+      new_feat_col = f"NEW_INC_BY_{feat}_MEDIAN"
       new_rel_col = f"NEW_INC_REL_TO_{feat}"
-      inc_by_feat = df[["AMT_INCOME_TOTAL", orig_col
-                       ]].groupby(orig_col).median()["AMT_INCOME_TOTAL"]
-      df[new_feat_col] = df[orig_col].map(inc_by_feat)
+      inc_by_feat = df[["AMT_INCOME_TOTAL",
+                        feat]].groupby(feat).median()["AMT_INCOME_TOTAL"]
+      df[new_feat_col] = df[feat].map(inc_by_feat)
       df[new_rel_col] = df["AMT_INCOME_TOTAL"] / df[new_feat_col]
+    return df
 
+  def gen_new_features(df):
     df["NEW_CREADIT_TO_INCOME_RATIO"
       ] = df["AMT_CREDIT"] / df["AMT_INCOME_TOTAL"]
     df["NEW_CREDIT_TO_ANNUITY_RATIO"] = df["AMT_CREDIT"] / df["AMT_ANNUITY"]
@@ -128,7 +129,12 @@ def feature_engineering(
     df["NEW_CREDIT_TO_INCOME_RATIO"] = df["AMT_CREDIT"] / df["AMT_INCOME_TOTAL"]
     return df
 
-  df = gen_new_features(data["train"])
+  for df in data.values():
+    set_nans(df)
+
+  df = data["train"]
+  df = gen_population_features(df)
+  df = gen_new_features(df)
   df = df.join(previous_app_counts(), on="SK_ID_CURR", rsuffix="PREV_")
   df = df.join(previous_app_agg(), on="SK_ID_CURR", rsuffix="PREV_")
 
