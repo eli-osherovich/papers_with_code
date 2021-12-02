@@ -49,25 +49,15 @@ def feature_engineering(
 ) -> tuple[pd.DataFrame, dict]:
 
   def set_nans(df):
+    # Remove the rows without gender
+    if "CODE_GENDER" in df.columns:
+      df = df[df['CODE_GENDER'] != "XNA"]
+
+    # Replace NaN substitutes with proper NaNs
     df.replace(["XNA", 365243], np.nan, inplace=True)
 
   for df in data.values():
     set_nans(df)
-
-  df = data["train"]
-  df["NEW_CREDIT_TO_ANNUITY_RATIO"] = df["AMT_CREDIT"] / df["AMT_ANNUITY"]
-  df["NEW_CREDIT_TO_GOODS_RATIO"] = df["AMT_CREDIT"] / df["AMT_GOODS_PRICE"]
-  df["NEW_INC_PER_CHLD"] = df["AMT_INCOME_TOTAL"] / (1 + df["CNT_CHILDREN"])
-  df["NEW_EMPLOY_TO_BIRTH_RATIO"] = df["DAYS_EMPLOYED"] / df["DAYS_BIRTH"]
-  df["NEW_ANNUITY_TO_INCOME_RATIO"
-    ] = df["AMT_ANNUITY"] / (1 + df["AMT_INCOME_TOTAL"])
-  df["NEW_CAR_TO_BIRTH_RATIO"] = df["OWN_CAR_AGE"] / df["DAYS_BIRTH"]
-  df["NEW_CAR_TO_EMPLOY_RATIO"] = df["OWN_CAR_AGE"] / df["DAYS_EMPLOYED"]
-  df["NEW_PHONE_TO_BIRTH_RATIO"
-    ] = df["DAYS_LAST_PHONE_CHANGE"] / df["DAYS_BIRTH"]
-  df["NEW_PHONE_TO_BIRTH_RATIO_EMPLOYER"
-    ] = df["DAYS_LAST_PHONE_CHANGE"] / df["DAYS_EMPLOYED"]
-  df["NEW_CREDIT_TO_INCOME_RATIO"] = df["AMT_CREDIT"] / df["AMT_INCOME_TOTAL"]
 
   def previous_app_counts():
     prev = data["previous_application"]
@@ -97,6 +87,48 @@ def feature_engineering(
     res.columns = [f"{c[0]}_{c[1]}" for c in res.columns]
     return res
 
+  def gen_new_features(df):
+
+    for feat in ["OCCUPATION", "ORGANIZATION"]:
+      orig_col = f"{feat}_TYPE"
+      new_feat_col = f"NEW_INC_BY_{feat}"
+      new_rel_col = f"NEW_INC_REL_TO_{feat}"
+      inc_by_feat = df[["AMT_INCOME_TOTAL", orig_col
+                       ]].groupby(orig_col).median()["AMT_INCOME_TOTAL"]
+      df[new_feat_col] = df[orig_col].map(inc_by_feat)
+      df[new_rel_col] = df["AMT_INCOME_TOTAL"] / df[new_feat_col]
+
+    df["NEW_CREADIT_TO_INCOME_RATIO"
+      ] = df["AMT_CREDIT"] / df["AMT_INCOME_TOTAL"]
+    df["NEW_CREDIT_TO_ANNUITY_RATIO"] = df["AMT_CREDIT"] / df["AMT_ANNUITY"]
+    df["NEW_CREDIT_TO_GOODS_RATIO"] = df["AMT_CREDIT"] / df["AMT_GOODS_PRICE"]
+    df["NEW_ANNUITY_TO_INCOME_RATIO"
+      ] = df["AMT_ANNUITY"] / (1 + df["AMT_INCOME_TOTAL"])
+
+    df["NEW_INC_PER_CHLD"] = df["AMT_INCOME_TOTAL"] / (1 + df["CNT_CHILDREN"])
+    df["NEW_EMPLOY_TO_BIRTH_RATIO"] = df["DAYS_EMPLOYED"] / df["DAYS_BIRTH"]
+
+    df["NEW_SOURCES_PROD"
+      ] = df["EXT_SOURCE_1"] * df["EXT_SOURCE_2"] * df["EXT_SOURCE_3"]
+    df["NEW_EXT_SOURCES_MEAN"] = df[[
+      "EXT_SOURCE_1", "EXT_SOURCE_2", "EXT_SOURCE_3"
+    ]].mean(axis=1)
+    df["NEW_SCORES_STD"] = df[["EXT_SOURCE_1", "EXT_SOURCE_2",
+                               "EXT_SOURCE_3"]].std(axis=1)
+    df["NEW_SCORES_STD"] = df["NEW_SCORES_STD"].fillna(
+      df["NEW_SCORES_STD"].mean()
+    )
+
+    df["NEW_CAR_TO_BIRTH_RATIO"] = df["OWN_CAR_AGE"] / df["DAYS_BIRTH"]
+    df["NEW_CAR_TO_EMPLOY_RATIO"] = df["OWN_CAR_AGE"] / df["DAYS_EMPLOYED"]
+    df["NEW_PHONE_TO_BIRTH_RATIO"
+      ] = df["DAYS_LAST_PHONE_CHANGE"] / df["DAYS_BIRTH"]
+    df["NEW_PHONE_TO_BIRTH_RATIO_EMPLOYER"
+      ] = df["DAYS_LAST_PHONE_CHANGE"] / df["DAYS_EMPLOYED"]
+    df["NEW_CREDIT_TO_INCOME_RATIO"] = df["AMT_CREDIT"] / df["AMT_INCOME_TOTAL"]
+    return df
+
+  df = gen_new_features(data["train"])
   df = df.join(previous_app_counts(), on="SK_ID_CURR", rsuffix="PREV_")
   df = df.join(previous_app_agg(), on="SK_ID_CURR", rsuffix="PREV_")
 
@@ -158,9 +190,9 @@ def first_level_pipeline(config) -> list[MLPipeline]:
   lgbm_model0 = BoostLGBM(
     default_params={
       "boosting": "gbdt",
-      "early_stopping_rounds": 25,
+      "early_stopping_rounds": FLAGS.patience,
       "learning_rate": 0.025,
-      "num_leaves": 64,
+      "num_leaves": FLAGS.num_leaves,
       "num_threads": config["n_threads"],
       "num_trees": FLAGS.max_trees,
       "random_state": 0,
@@ -170,9 +202,9 @@ def first_level_pipeline(config) -> list[MLPipeline]:
   lgbm_model1 = BoostLGBM(
     default_params={
       "boosting": "dart",
-      # "early_stopping_rounds": 25, Not supported in DART
+      # "early_stopping_rounds": FLAGS.patience, Not supported in DART
       "learning_rate": 0.025,
-      "num_leaves": 64,
+      "num_leaves": FLAGS.num_leaves,
       "num_threads": config["n_threads"],
       "num_trees": FLAGS.max_trees,
       "random_state": 1,
@@ -182,9 +214,9 @@ def first_level_pipeline(config) -> list[MLPipeline]:
   lgbm_model2 = BoostLGBM(
     default_params={
       "boosting": "rf",
-      "early_stopping_rounds": 25,
+      "early_stopping_rounds": FLAGS.patience,
       "learning_rate": 0.025,
-      "num_leaves": 64,
+      "num_leaves": FLAGS.num_leaves,
       "num_threads": config["n_threads"],
       "num_trees": FLAGS.max_trees,
       "random_state": 2,
@@ -195,9 +227,9 @@ def first_level_pipeline(config) -> list[MLPipeline]:
     default_params={
       "boosting": "goss",
       "bagging_freq": 0,  # GOSS does not support bagging.
-      "early_stopping_rounds": 25,
+      "early_stopping_rounds": FLAGS.patience,
       "learning_rate": 0.025,
-      "num_leaves": 64,
+      "num_leaves": FLAGS.num_leaves,
       "num_threads": config["n_threads"],
       "num_trees": FLAGS.max_trees,
       "random_state": 3,
@@ -255,7 +287,10 @@ def first_level_pipeline(config) -> list[MLPipeline]:
     [LinearLBFGS()],
     features_pipeline=LinearFeatures(),
   )
-  return [gbt_pipeline, linear_pipeline]
+  return [
+    gbt_pipeline,
+    # linear_pipeline,
+  ]
 
 
 @task

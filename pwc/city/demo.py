@@ -12,7 +12,10 @@ flags.DEFINE_integer(
 )
 flags.DEFINE_integer("trials", 150, "Number of tuning trials", lower_bound=0)
 flags.DEFINE_integer("cv_folds", 5, "Number of tuning trials", lower_bound=2)
-
+flags.DEFINE_integer(
+  "num_leaves", 128, "Number of tuning trials", lower_bound=2
+)
+flags.DEFINE_integer("patience", 50, "Patience during early stopping")
 from pwc.city.default_flow import flow_automl as default_flow
 from pwc.city.fraud_flow import flow_automl as fraud_flow
 
