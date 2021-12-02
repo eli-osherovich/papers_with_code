@@ -34,17 +34,27 @@ FLAGS = flags.FLAGS
 
 
 @task
-def load_data() -> tuple[pd.DataFrame, dict]:
+def load_data() -> tuple[dict[str, pd.DataFrame], dict]:
   ds = DataSet()
-  df = ds.as_dataframe("train")
+  data = {}
+  data["train"] = ds.as_dataframe("train")
+  data["previous_application"] = ds.as_dataframe("previous_application")
   roles = {"target": "TARGET", "drop": "SK_ID_CURR"}
-  return df, roles
+  return data, roles
 
 
 @task
-def feature_engineering(df: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
-  df = df[df["CODE_GENDER"] != "XNA"]
-  df["DAYS_EMPLOYED"].replace(365243, np.nan, inplace=True)
+def feature_engineering(
+  data: dict[str, pd.DataFrame]
+) -> tuple[pd.DataFrame, dict]:
+
+  def set_nans(df):
+    df.replace(["XNA", 365243], np.nan, inplace=True)
+
+  for df in data.values():
+    set_nans(df)
+
+  df = data["train"]
   df["NEW_CREDIT_TO_ANNUITY_RATIO"] = df["AMT_CREDIT"] / df["AMT_ANNUITY"]
   df["NEW_CREDIT_TO_GOODS_RATIO"] = df["AMT_CREDIT"] / df["AMT_GOODS_PRICE"]
   df["NEW_INC_PER_CHLD"] = df["AMT_INCOME_TOTAL"] / (1 + df["CNT_CHILDREN"])
@@ -59,6 +69,38 @@ def feature_engineering(df: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
     ] = df["DAYS_LAST_PHONE_CHANGE"] / df["DAYS_EMPLOYED"]
   df["NEW_CREDIT_TO_INCOME_RATIO"] = df["AMT_CREDIT"] / df["AMT_INCOME_TOTAL"]
 
+  def previous_app_counts():
+    prev = data["previous_application"]
+
+    # Count (statuses) of previous applications
+    return prev.groupby(
+      ["SK_ID_CURR"]
+    ).NAME_CONTRACT_STATUS.value_counts().unstack(fill_value=0)
+
+  def previous_app_agg():
+    prev = data["previous_application"]
+    # Add feature: value ask / value received percentage
+    prev["APP_CREDIT_PERC"] = prev["AMT_APPLICATION"] / prev["AMT_CREDIT"]
+    num_aggregations = {
+      "AMT_ANNUITY": ["max", "mean"],
+      "AMT_APPLICATION": ["max", "mean"],
+      "AMT_CREDIT": ["max", "mean"],
+      "APP_CREDIT_PERC": ["max", "mean"],
+      "AMT_DOWN_PAYMENT": ["max", "mean"],
+      "AMT_GOODS_PRICE": ["max", "mean"],
+      "HOUR_APPR_PROCESS_START": ["max", "mean"],
+      "RATE_DOWN_PAYMENT": ["max", "mean"],
+      "DAYS_DECISION": ["max", "mean"],
+      "CNT_PAYMENT": ["mean", "sum"],
+    }
+    res = prev.groupby("SK_ID_CURR").agg(num_aggregations)
+    res.columns = [f"{c[0]}_{c[1]}" for c in res.columns]
+    return res
+
+  df = df.join(previous_app_counts(), on="SK_ID_CURR", rsuffix="PREV_")
+  df = df.join(previous_app_agg(), on="SK_ID_CURR", rsuffix="PREV_")
+
+  # Roles
   roles = {"target": "TARGET"}
 
   return df, roles
@@ -173,18 +215,20 @@ def first_level_pipeline(config) -> list[MLPipeline]:
 
   gbt_pipeline = MLPipeline(
     [
-      (
-        cb_model0,
-        OptunaTuner(
-          n_trials=2, timeout=config["timeout"], fit_on_holdout=False
-        ),
-      ),
-      (
-        lgbm_model0,
-        OptunaTuner(
-          n_trials=2, timeout=config["timeout"], fit_on_holdout=False
-        ),
-      ),
+      cb_model0,
+      lgbm_model0,
+      # (
+      #   cb_model0,
+      #   OptunaTuner(
+      #     n_trials=2, timeout=config["timeout"], fit_on_holdout=False
+      #   ),
+      # ),
+      # (
+      #   lgbm_model0,
+      #   OptunaTuner(
+      #     n_trials=2, timeout=config["timeout"], fit_on_holdout=False
+      #   ),
+      # ),
       # (
       #   lgbm_model1,
       #   OptunaTuner(
