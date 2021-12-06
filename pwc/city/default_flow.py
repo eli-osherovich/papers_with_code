@@ -1,8 +1,10 @@
 import random
 from typing import Any
 
+from absl import flags
 import lightautoml
 from lightautoml.automl.base import AutoML
+from lightautoml.automl.blend import WeightedBlender
 from lightautoml.dataset.roles import CategoryRole
 from lightautoml.dataset.roles import DatetimeRole
 from lightautoml.dataset.roles import TargetRole
@@ -10,7 +12,8 @@ from lightautoml.ml_algo.boost_cb import BoostCB
 from lightautoml.ml_algo.boost_lgbm import BoostLGBM
 from lightautoml.ml_algo.linear_sklearn import LinearLBFGS
 from lightautoml.ml_algo.tuning.optuna import OptunaTuner
-from lightautoml.pipelines.features.lgb_pipeline import LGBAdvancedPipeline, LGBSimpleFeatures
+from lightautoml.pipelines.features.lgb_pipeline import LGBAdvancedPipeline
+from lightautoml.pipelines.features.lgb_pipeline import LGBSimpleFeatures
 from lightautoml.pipelines.features.linear_pipeline import LinearFeatures
 from lightautoml.pipelines.ml.base import MLPipeline
 from lightautoml.reader.base import PandasToPandasReader
@@ -27,8 +30,6 @@ import tensorflow as tf
 import torch
 
 from pwc.datasets import HomeCreditDefaultRisk as DataSet
-
-from absl import flags
 
 FLAGS = flags.FLAGS
 
@@ -292,8 +293,8 @@ def load_config() -> dict[str, Any]:
     "n_threads": psutil.cpu_count(logical=True),
     "test_size": 0.2,
     "random_state": 42,
-    "cv_folds": 5,
-    "timeout": 3600,
+    "cv_folds": FLAGS.cv_folds,
+    "timeout": FLAGS.timeout,
   }
   logger.info(f"Setting target column to {config['target']}")
   logger.info(f"Setting number of threads to {config['n_threads']}")
@@ -319,7 +320,7 @@ def split_data(df: pd.DataFrame,
 
 @task
 def first_level_pipeline(config) -> list[MLPipeline]:
-  lgbm_model0 = BoostLGBM(
+  gbdt_model = BoostLGBM(
     default_params={
       "boosting": "gbdt",
       "early_stopping_rounds": FLAGS.patience,
@@ -331,7 +332,7 @@ def first_level_pipeline(config) -> list[MLPipeline]:
     }
   )
 
-  lgbm_model1 = BoostLGBM(
+  dart_model = BoostLGBM(
     default_params={
       "boosting": "dart",
       # "early_stopping_rounds": FLAGS.patience, Not supported in DART
@@ -343,7 +344,7 @@ def first_level_pipeline(config) -> list[MLPipeline]:
     }
   )
 
-  lgbm_model2 = BoostLGBM(
+  rf_model = BoostLGBM(
     default_params={
       "boosting": "rf",
       "early_stopping_rounds": FLAGS.patience,
@@ -355,7 +356,7 @@ def first_level_pipeline(config) -> list[MLPipeline]:
     }
   )
 
-  lgbm_model3 = BoostLGBM(
+  goss_model = BoostLGBM(
     default_params={
       "boosting": "goss",
       "bagging_freq": 0,  # GOSS does not support bagging.
@@ -368,7 +369,7 @@ def first_level_pipeline(config) -> list[MLPipeline]:
     }
   )
 
-  cb_model0 = BoostCB(
+  cb_model = BoostCB(
     default_params={
       "learning_rate": 0.025,
       "num_trees": FLAGS.max_trees,
@@ -379,39 +380,49 @@ def first_level_pipeline(config) -> list[MLPipeline]:
 
   gbt_pipeline = MLPipeline(
     [
-      cb_model0,
-      lgbm_model0,
-      lgbm_model1,
-      lgbm_model2,
-      lgbm_model3,
+      cb_model,
+      gbdt_model,
+      dart_model,
+      rf_model,
+      goss_model,
       # (
       #   cb_model0,
       #   OptunaTuner(
-      #     n_trials=2, timeout=config["timeout"], fit_on_holdout=False
+      #     n_trials=FLAGS.trials,
+      #     timeout=config["timeout"],
+      #     fit_on_holdout=False
       #   ),
       # ),
       # (
       #   lgbm_model0,
       #   OptunaTuner(
-      #     n_trials=2, timeout=config["timeout"], fit_on_holdout=False
+      #     n_trials=FLAGS.trials,
+      #     timeout=config["timeout"],
+      #     fit_on_holdout=False
       #   ),
       # ),
       # (
       #   lgbm_model1,
       #   OptunaTuner(
-      #     n_trials=2, timeout=config["timeout"], fit_on_holdout=False
+      #     n_trials=FLAGS.trials,
+      #     timeout=config["timeout"],
+      #     fit_on_holdout=False
       #   ),
       # ),
       # (
       #   lgbm_model2,
       #   OptunaTuner(
-      #     n_trials=2, timeout=config["timeout"], fit_on_holdout=False
+      #     n_trials=FLAGS.trials,
+      #     timeout=config["timeout"],
+      #     fit_on_holdout=False
       #   ),
       # ),
       # (
       #   lgbm_model3,
       #   OptunaTuner(
-      #     n_trials=2, timeout=config["timeout"], fit_on_holdout=False
+      #     n_trials=FLAGS.trials,
+      #     timeout=config["timeout"],
+      #     fit_on_holdout=False
       #   ),
       # ),
     ],
@@ -424,14 +435,91 @@ def first_level_pipeline(config) -> list[MLPipeline]:
   )
   return [
     gbt_pipeline,
-    # linear_pipeline,
+    linear_pipeline,
   ]
 
 
-@task
-def second_level_pipeline(config) -> list[MLPipeline]:
-  del config  # not used
-  return [MLPipeline([LinearLBFGS()])]
+# @task
+# def second_level_pipeline(config) -> list[MLPipeline]:
+#   gbdt_model = BoostLGBM(
+#     default_params={
+#       "boosting": "gbdt",
+#       "early_stopping_rounds": FLAGS.patience,
+#       "learning_rate": 0.025,
+#       "num_leaves": FLAGS.num_leaves,
+#       "num_threads": config["n_threads"],
+#       "num_trees": FLAGS.max_trees,
+#       "random_state": 5,
+#     }
+#   )
+
+#   dart_model = BoostLGBM(
+#     default_params={
+#       "boosting": "dart",
+#       # "early_stopping_rounds": FLAGS.patience, Not supported in DART
+#       "learning_rate": 0.025,
+#       "num_leaves": FLAGS.num_leaves,
+#       "num_threads": config["n_threads"],
+#       "num_trees":
+#         FLAGS
+#         .max_trees,  # DART has no overfitting protection by early stopping.
+#       "random_state": 6,
+#     }
+#   )
+
+#   rf_model = BoostLGBM(
+#     default_params={
+#       "boosting": "rf",
+#       "early_stopping_rounds": FLAGS.patience,
+#       "learning_rate": 0.025,
+#       "num_leaves": FLAGS.num_leaves,
+#       "num_threads": config["n_threads"],
+#       "num_trees": FLAGS.max_trees,
+#       "random_state": 7,
+#     }
+#   )
+
+#   goss_model = BoostLGBM(
+#     default_params={
+#       "boosting": "goss",
+#       "bagging_freq": 0,  # GOSS does not support bagging.
+#       "early_stopping_rounds": FLAGS.patience,
+#       "learning_rate": 0.025,
+#       "num_leaves": FLAGS.num_leaves,
+#       "num_threads": config["n_threads"],
+#       "num_trees": FLAGS.max_trees,
+#       "random_state": 8,
+#     }
+#   )
+
+#   cb_model = BoostCB(
+#     default_params={
+#       "learning_rate": 0.025,
+#       "num_trees": FLAGS.max_trees,
+#       "random_state": 9,
+#       "thread_count": config["n_threads"],
+#     }
+#   )
+
+#   gbt_pipeline = MLPipeline(
+#     [
+#       cb_model,
+#       gbdt_model,
+#       dart_model,
+#       rf_model,
+#       goss_model,
+#     ],
+#     features_pipeline=LGBAdvancedPipeline(),
+#   )
+
+#   linear_pipeline = MLPipeline(
+#     [LinearLBFGS()],
+#     features_pipeline=LinearFeatures(),
+#   )
+#   return [
+#     gbt_pipeline,
+#     linear_pipeline,
+#   ]
 
 
 @task
@@ -441,7 +529,7 @@ def get_model(pipelines, config):
     task, cv=config["cv_folds"], random_state=config["random_state"]
   )
 
-  return AutoML(reader, pipelines)
+  return AutoML(reader, pipelines, blender=WeightedBlender())
 
 
 @task
@@ -470,6 +558,6 @@ with Flow("AutoML", result=result) as flow_automl:
   df, roles = feature_engineering(df)
   train_df, test_df = split_data(df, config)
   level1 = first_level_pipeline(config)
-  level2 = second_level_pipeline(config)
-  model = get_model([level1, level2], config)
+  # level2 = second_level_pipeline(config)
+  model = get_model([level1], config)
   train(model, train_df, test_df, roles, config)

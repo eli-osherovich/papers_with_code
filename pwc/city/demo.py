@@ -11,7 +11,7 @@ FLAGS = flags.FLAGS
 flags.DEFINE_enum("dataset", "fraud", ["fraud", "default"], "Dataset to use")
 
 flags.DEFINE_integer(
-  "max_trees", 2000, "Maximal number of trees for boosters", lower_bound=1
+  "max_trees", 3000, "Maximal number of trees for boosters", lower_bound=1
 )
 flags.DEFINE_integer("trials", 150, "Number of tuning trials", lower_bound=0)
 flags.DEFINE_integer("cv_folds", 5, "Number of tuning trials", lower_bound=2)
