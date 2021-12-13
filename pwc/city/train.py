@@ -15,7 +15,6 @@ from prefect.utilities import logging
 from sklearn.metrics import roc_auc_score
 
 from pwc.city import task_lib
-from pwc.datasets import common
 from pwc.datasets import HomeCreditDefaultRisk as Dataset
 
 FLAGS = flags.FLAGS
@@ -48,7 +47,6 @@ def get_train_data(features_data: pd.DataFrame, logger=None) -> pd.DataFrame:
   if not FLAGS.combine_features:
     application_data = application_data[["TARGET", "SK_ID_CURR"]]
 
-  common.pandas_downcast(application_data, inplace=True)
   res = application_data.merge(features_data, on="SK_ID_CURR")
   res = res.drop("SK_ID_CURR", axis=1)
 
