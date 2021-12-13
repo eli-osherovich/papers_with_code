@@ -84,11 +84,14 @@ class Dataset:
   # def as_dataset(self, *splits) -> DS_RESULT:
   #   res = tuple(self._generate_dataset(s) for s in splits)
   #   return squeeze(res)
-  def as_dataframe(self, split: str) -> pd.DataFrame:
+  def as_dataframe(self, split: str, downcast: bool = True) -> pd.DataFrame:
     data_frames = [
       f.as_dataframe() for f in utils.unsqueeze(self.splits[split])
     ]
-    return pd.concat(data_frames, ignore_index=True)
+    df = pd.concat(data_frames, ignore_index=True)
+    if downcast:
+      df = utils.pandas_downcast(df)
+    return df
 
   def as_preprocessed_dataframe(self, split: str) -> DF_PAIR:
     x = self.as_dataframe(split)

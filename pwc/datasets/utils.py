@@ -5,6 +5,7 @@ import tempfile
 from typing import Optional, Union
 from urllib import parse
 
+import pandas as pd
 import tensorflow as tf
 
 
@@ -55,3 +56,21 @@ def unsqueeze(obj) -> Sequence:
     return obj
   else:
     return [obj]
+
+
+def pandas_downcast(df: pd.DataFrame, inplace=True) -> pd.DataFrame:
+  """Convert numerical types to the 'minimal' sufficient type"""
+
+  if not inplace:
+    df = df.copy()
+
+  float_cols = df.select_dtypes("float").columns
+  int_cols = df.select_dtypes("integer").columns
+
+  df[float_cols] = df[float_cols].apply(pd.to_numeric, downcast="float")
+  df[int_cols] = df[int_cols].apply(pd.to_numeric, downcast="integer")
+
+  is_boolean = df.select_dtypes(["int8", "uint8"]).isin([0, 1]).all()
+  bool_cols = is_boolean[is_boolean].index
+  df[bool_cols] = df[bool_cols].astype(bool)
+  return df

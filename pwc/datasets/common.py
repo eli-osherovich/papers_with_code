@@ -1,7 +1,6 @@
 from absl import logging
 
 from . import *  # noqa F403
-from . import dataset
 
 
 # TODO: consider class registry instead of blind import.
