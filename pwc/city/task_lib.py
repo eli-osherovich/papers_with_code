@@ -123,3 +123,11 @@ def save_model(model, data_type: str, features_type: str) -> None:
   joblib.dump(
     model.levels[0][0].ml_algos[0].get_features_score(), features_path
   )
+
+
+def dump_feather(data: dict[str, pd.DataFrame]):
+  data_dir = pathlib.Path(__file__).parent / "data"
+  data_dir.mkdir(exist_ok=True)
+
+  for key, df in data.items():
+    df.to_feather(data_dir / f"{key}.feather")
