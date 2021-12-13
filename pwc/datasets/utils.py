@@ -5,6 +5,7 @@ import tempfile
 from typing import Optional, Union
 from urllib import parse
 
+import numpy as np
 import pandas as pd
 import tensorflow as tf
 
@@ -73,4 +74,11 @@ def pandas_downcast(df: pd.DataFrame, inplace=True) -> pd.DataFrame:
   is_boolean = df.select_dtypes(["int8", "uint8"]).isin([0, 1]).all()
   bool_cols = is_boolean[is_boolean].index
   df[bool_cols] = df[bool_cols].astype(bool)
+
+  # Some float columns are boolean with missing values.
+  # Pandas supports its own nullable boolean type.
+  is_boolean = df[float_cols].isin([0, 1, np.nan]).all()
+  bool_cols = is_boolean[is_boolean].index
+  df[bool_cols] = df[bool_cols].astype("boolean")
+
   return df
