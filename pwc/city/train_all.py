@@ -25,11 +25,8 @@ flags.DEFINE_bool(
 flags.DEFINE_bool("save", True, "Save results")
 
 flags.DEFINE_float("corr_thresh", 0.98, "Correlation threshold", lower_bound=0)
-flags.DEFINE_float("imp_thresh", 0.01, "Importance threshold", lower_bound=0)
+flags.DEFINE_float("imp_thresh", 0.02, "Importance threshold", lower_bound=0)
 flags.DEFINE_float("null_thresh", 0.6, "NULLity threshold", lower_bound=0)
-
-flags.DEFINE_string("data_type", "installments_payments", "Data part")
-flags.DEFINE_string("features_type", "autofeat_ts", "Features type")
 
 _logger = logging.get_logger()
 
@@ -41,17 +38,24 @@ get_important_features = task(task_lib.get_important_features)
 
 
 @task
-def get_train_data(features_data: pd.DataFrame, logger=None) -> pd.DataFrame:
+def load_targets() -> pd.DataFrame:
   ds = Dataset()
-  application_data = ds.as_dataframe("train")
-  if not FLAGS.combine_features:
-    application_data = application_data[["TARGET", "SK_ID_CURR"]]
+  df = ds.as_dataframe("train")
+  return df[["SK_ID_CURR", "TARGET"]]
 
-  res = application_data.merge(features_data, on="SK_ID_CURR")
-  res = res.drop("SK_ID_CURR", axis=1)
+
+@task
+def merge_features(
+  cur_df: pd.DataFrame,
+  features_data: pd.DataFrame,
+  logger=None
+) -> pd.DataFrame:
+
+  features_data = features_data.drop("TARGET", axis=1, errors="ignore")
+  res = cur_df.merge(features_data, how="left", on="SK_ID_CURR")
 
   if logger:
-    logger.info(f"Prepared train data: {res.shape}")
+    logger.info(f"Merged dataframe shape: {res.shape}")
   return res
 
 
@@ -85,23 +89,34 @@ def main(argv):
   del argv  # unused
 
   with Flow("main") as flow:
-    imp_features = get_important_features(
-      FLAGS.data_type, FLAGS.features_type, FLAGS.imp_thresh, logger=_logger
+    all_feats = zip(
+      [
+        "train", "train", "train", "credit_card_balance",
+        "installments_payments", "pos_cache_balance"
+      ],
+      [
+        None, "autofeat_num", "autofeat_bool", "autofeat_ts", "autofeat_ts",
+        "autofeat_ts"
+      ],
     )
-    features_df = load_features_data(
-      FLAGS.data_type, FLAGS.features_type, cols=imp_features, logger=_logger
-    )
-    features_df = remove_null_columns(
-      features_df, FLAGS.null_thresh, logger=_logger
-    )
-    features_df = remove_high_corr(
-      features_df, FLAGS.corr_thresh, logger=_logger
-    )
-
-    train_df = get_train_data(features_df, logger=_logger)
+    train_df = load_targets()
+    for data_type, features_type in all_feats:
+      imp_features = get_important_features(
+        data_type, features_type, FLAGS.imp_thresh, logger=_logger
+      )
+      features_df = load_features_data(
+        data_type, features_type, cols=imp_features, logger=_logger
+      )
+      features_df = remove_null_columns(
+        features_df, FLAGS.null_thresh, logger=_logger
+      )
+      features_df = remove_high_corr(
+        features_df, FLAGS.corr_thresh, logger=_logger
+      )
+      train_df = merge_features(train_df, features_df, logger=_logger)
     model = train(train_df, logger=_logger)
-    if FLAGS.save:
-      save_model(model, FLAGS.data_type, FLAGS.features_type)
+    # if FLAGS.save:
+    #   save_model(model, FLAGS.data_type, FLAGS.features_type)
   flow.run()
 
 

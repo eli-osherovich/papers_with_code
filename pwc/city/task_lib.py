@@ -1,4 +1,5 @@
 from glob import glob
+from os import path
 import pathlib
 from typing import Union
 
@@ -13,16 +14,28 @@ PathType = Union[str, pathlib.Path]
 def get_feature_importance_file(
   data_type: str, features_type: str
 ) -> pathlib.Path:
-  cur_dir = pathlib.Path(__file__).parent
-  return (
-    cur_dir / "features" /
-    f"{data_type}_{features_type}_features_importance.pkl"
-  )
+  dir_path = pathlib.Path(__file__).parent / "features"
+  if features_type:
+    return dir_path / f"{data_type}_{features_type}_features_importance.pkl"
+  else:
+    return dir_path / f"{data_type}_features_importance.pkl"
 
 
 def get_model_file(data_type: str, features_type: str) -> pathlib.Path:
-  cur_dir = pathlib.Path(__file__).parent
-  return cur_dir / "models" / f"{data_type}_{features_type}_model.pkl"
+  dir_path = pathlib.Path(__file__).parent / "models"
+  if features_type:
+    return dir_path / f"{data_type}_{features_type}_model.pkl"
+  else:
+    return dir_path / f"{data_type}_model.pkl"
+
+
+def get_df_files(data_type: str, features_type: str) -> list[pathlib.Path]:
+  dir_path = pathlib.Path(__file__).parent / "data"
+  if features_type:
+    pattern = f"{data_type}_{features_type}_*.feather"
+  else:
+    pattern = f"{data_type}.feather"
+  return list(dir_path.glob(pattern))
 
 
 def get_important_features(
@@ -82,11 +95,18 @@ def remove_null_columns(
 def remove_high_corr(
   df: pd.DataFrame, corr_thresh: float, *, logger=None
 ) -> pd.DataFrame:
-  id_col = df.pop("SK_ID_CURR")
+  # Preserve special columns
+  id_ = "SK_ID_CURR"
+  target_ = "TARGET"
+  id_col = df.pop(id_) if id_ in df else None
+  target_col = df.pop(target_) if target_ in df else None
 
-  corr_mat = np.corrcoef(df.dropna().to_numpy(dtype=np.float32), rowvar=False)
+  num_df = df.select_dtypes(include=["number", "bool"])
+  corr_mat = np.corrcoef(
+    num_df.dropna().to_numpy(dtype=np.float32), rowvar=False
+  )
   corr_mat = np.abs(np.triu(corr_mat, k=1))
-  corr_cols = df.columns[(corr_mat > corr_thresh).any(axis=0)]
+  corr_cols = num_df.columns[(corr_mat > corr_thresh).any(axis=0)]
 
   if logger:
     logger.info(
@@ -94,7 +114,11 @@ def remove_high_corr(
     )
 
   df = df.drop(corr_cols, axis=1)
-  df["SK_ID_CURR"] = id_col
+  if id_col is not None:
+    df[id_] = id_col
+  if target_col is not None:
+    df[target_] = target_col
+
   return df
 
 
@@ -106,7 +130,7 @@ def load_features_data(
   logger=None
 ) -> pd.DataFrame:
   dfs = []
-  for f_name in glob(f"data/{data_type}_{features_type}_*.feather"):
+  for f_name in get_df_files(data_type, features_type):
     df = pd.read_feather(f_name, columns=cols)
     dfs.append(df)
   df = pd.concat(dfs, ignore_index=True)
