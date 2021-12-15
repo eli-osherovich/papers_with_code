@@ -24,6 +24,7 @@ _logger = logging.get_logger()
 
 dump_feather = task(task_lib.dump_feather)
 remove_null_columns = task(task_lib.remove_null_columns)
+set_nans = task(task_lib.set_nans)
 
 
 @task
@@ -38,15 +39,6 @@ def load_data() -> dict[str, pd.DataFrame]:
   # res["pos_cache_balance"] = ds.as_dataframe("pos_cache_balance")
   # res["credit_card_balance"] = ds.as_dataframe("credit_card_balance")
 
-  return res
-
-
-@task
-def proper_nans(data: dict[str, pd.DataFrame]) -> dict[str, pd.DataFrame]:
-  # Replace NaN substitutes with proper NaNs
-  res = {}
-  for key, df in data.items():
-    res[key] = df.replace(["XNA", 365243, np.inf, -np.inf], pd.NA)
   return res
 
 
@@ -114,12 +106,11 @@ def main(argv):
 
   with Flow("feature_engineering") as flow:
     data = load_data()
+    data = set_nans(data)
     dump_feather(data)
     data = remove_null_columns(data, FLAGS.null_thresh, logger=_logger)
     gen_num_features(data)
     gen_bool_features(data)
-    # data = proper_nans(data)
-    # save_data(data)
   flow.run()
 
 

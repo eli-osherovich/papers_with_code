@@ -33,6 +33,7 @@ flags.DEFINE_string("features_type", "", "Features type")
 
 _logger = logging.get_logger()
 
+set_nans = task(task_lib.set_nans)
 remove_null_columns = task(task_lib.remove_null_columns)
 remove_high_corr = task(task_lib.remove_high_corr)
 load_features_data = task(task_lib.load_features_data)
@@ -98,9 +99,10 @@ def main(argv):
     features_df = remove_high_corr(
       features_df, FLAGS.corr_thresh, logger=_logger
     )
-
     train_df = get_train_data(features_df, logger=_logger)
+    train_df = set_nans(train_df)
     model = train(train_df, logger=_logger)
+
     if FLAGS.save:
       save_model(model, FLAGS.data_type, FLAGS.features_type)
   flow.run()

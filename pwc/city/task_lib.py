@@ -155,3 +155,22 @@ def dump_feather(data: dict[str, pd.DataFrame]):
 
   for key, df in data.items():
     df.to_feather(data_dir / f"{key}.feather")
+
+
+def set_nans(data: DataType) -> DataType:
+
+  def _set_nans(df: pd.DataFrame) -> pd.DataFrame:
+    # Remove the rows without gender
+    if "CODE_GENDER" in df.columns:
+      df = df[df['CODE_GENDER'] != "XNA"]
+    # Replace NaN substitutes with proper NaNs
+    df.replace(["XNA", 365243], np.nan, inplace=True)
+    return df
+
+  if isinstance(data, pd.DataFrame):
+    return _set_nans(data)
+  else:
+    res = {}
+    for key, df in data.items():
+      res[key] = _set_nans(df)
+    return res

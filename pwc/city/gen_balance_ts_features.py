@@ -7,6 +7,7 @@ from absl import flags
 import more_itertools
 import tsfresh
 
+from pwc.city import task_lib
 from pwc.datasets import HomeCreditDefaultRisk as Dataset
 
 FLAGS = flags.FLAGS
@@ -31,6 +32,7 @@ def get_ts_params():
 def load_data():
   ds = Dataset()
   df = ds.as_dataframe(FLAGS.data_type)
+  df = task_lib.set_nans(df)
   df = df.select_dtypes(include=["number", "bool"])
   df = df.dropna()
   return df
