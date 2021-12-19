@@ -1,5 +1,3 @@
-from glob import glob
-from os import path
 import pathlib
 from typing import Union
 
@@ -161,10 +159,19 @@ def set_nans(data: DataType) -> DataType:
 
   def _set_nans(df: pd.DataFrame) -> pd.DataFrame:
     # Remove the rows without gender
-    if "CODE_GENDER" in df.columns:
-      df = df[df['CODE_GENDER'] != "XNA"]
+    if "CODE_GENDER" in df:
+      df = df[df["CODE_GENDER"] != "XNA"].copy()
+
+    # We drop this line to unify treatment.
+    if "SK_ID_CURR" in df:
+      df = df[df["SK_ID_CURR"] != 365243].copy()
+
     # Replace NaN substitutes with proper NaNs
-    df.replace(["XNA", 365243], np.nan, inplace=True)
+    df = df.replace(365243, np.nan)
+    try:
+      return df.replace("XNA", pd.NA)
+    except TypeError:
+      pass
     return df
 
   if isinstance(data, pd.DataFrame):
@@ -174,3 +181,15 @@ def set_nans(data: DataType) -> DataType:
     for key, df in data.items():
       res[key] = _set_nans(df)
     return res
+
+
+def flatten_col_names(df: pd.DataFrame, *, prefix: str = "") -> list[str]:
+  new_cols = []
+  for idx in df.columns.to_flat_index():
+    if not isinstance(idx, tuple):
+      idx = (idx,)
+    if prefix:
+      new_cols.append("_".join([prefix, *idx]))
+    else:
+      new_cols.append("_".join(idx))
+  return new_cols
