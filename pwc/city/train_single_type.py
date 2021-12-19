@@ -2,16 +2,17 @@
 
 from absl import app
 from absl import flags
-import lightautoml.tasks
 from lightautoml.automl.base import AutoML
 from lightautoml.ml_algo.boost_lgbm import BoostLGBM
 from lightautoml.pipelines.features.lgb_pipeline import LGBSimpleFeatures
 from lightautoml.pipelines.ml.base import MLPipeline
 from lightautoml.reader.base import PandasToPandasReader
+import lightautoml.tasks
 import pandas as pd
 from prefect import Flow
 from prefect import task
 from prefect.utilities import logging
+import psutil
 from sklearn.metrics import roc_auc_score
 
 from pwc.city import task_lib
@@ -30,6 +31,7 @@ flags.DEFINE_float("null_thresh", 0.6, "NULLity threshold", lower_bound=0)
 
 flags.DEFINE_string("data_type", "train", "Data part")
 flags.DEFINE_string("features_type", "", "Features type")
+flags.DEFINE_integer("verbose", 1, "Verbosity level")
 
 _logger = logging.get_logger()
 
@@ -67,13 +69,13 @@ def train(train_df: pd.DataFrame, *, logger=None):
     default_params={
       "boosting": "gbdt",
       "early_stopping_rounds": 50,
-      "num_threads": 8,
+      "num_threads": psutil.cpu_count(logical=False),
       "random_state": 0,
     }
   )
   pipeline = MLPipeline([model], features_pipeline=LGBSimpleFeatures())
   automl = AutoML(reader, [[pipeline]])
-  oof_pred = automl.fit_predict(train_df, roles=roles, verbose=2)
+  oof_pred = automl.fit_predict(train_df, roles=roles, verbose=FLAGS.verbose)
 
   if logger:
     logger.info(
