@@ -18,6 +18,16 @@ SPLITS = {
         "false_values": ["N"],
       }
     ),
+  "test":
+    dataset.DatasetFile(
+      uri=utils.make_uri("home-credit-default-risk.zip"),
+      checksum="4e7a243b13f6e3d40f682a9a0cfd59c70910ca6c5a4289f71ca1f25efbd8e3de",
+      file_accessor_args={"name": "application_test.csv"},
+      file_reader_args={
+        "true_values": ["Y"],
+        "false_values": ["N"],
+      }
+    ),
   "bureau":
     dataset.DatasetFile(
       uri=utils.make_uri("home-credit-default-risk.zip"),
