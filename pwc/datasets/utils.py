@@ -59,7 +59,7 @@ def unsqueeze(obj) -> Sequence:
     return [obj]
 
 
-def pandas_downcast(df: pd.DataFrame, inplace=True) -> pd.DataFrame:
+def pandas_downcast(df: pd.DataFrame, inplace: bool = True) -> pd.DataFrame:
   """Convert numerical types to the 'minimal' sufficient type"""
 
   if not inplace:
