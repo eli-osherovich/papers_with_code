@@ -162,9 +162,16 @@ def set_nans(data: DataType) -> DataType:
     if "CODE_GENDER" in df:
       df = df[df["CODE_GENDER"] != "XNA"].copy()
 
+    # Max income in test is 4M; train has a 117M value
+    if "AMT_INCOME_TOTAL" in df:
+      df = df[df.AMT_INCOME_TOTAL < 20000000].copy()
+
+    if "DAYS_LAST_PHONE_CHANGE" in df:
+      df.DAYS_LAST_PHONE_CHANGE.replace(0, np.nan, inplace=True)
+
     # We drop this line to unify treatment.
     if "SK_ID_CURR" in df:
-      df = df[df["SK_ID_CURR"] != 365243].copy()
+      df = df[df.SK_ID_CURR != 365243].copy()
 
     # Replace NaN substitutes with proper NaNs
     df = df.replace(365243, np.nan)
