@@ -8,13 +8,25 @@ from prefect import Flow
 from prefect import task
 from prefect.utilities import logging
 
-from pwc.datasets import HomeCreditDefaultRisk as Dataset
 from pwc.city import task_lib
+from pwc.datasets import HomeCreditDefaultRisk as Dataset
+from pwc.datasets import utils
 
 _logger = logging.get_logger()
 _id = "SK_ID_CURR"
 
 set_nans = task(task_lib.set_nans)
+
+
+def get_age_label(days_birth):
+  """ Return the age group label (int). """
+  age_years = -days_birth / 365
+  if age_years < 27: return 1
+  elif age_years < 40: return 2
+  elif age_years < 50: return 3
+  elif age_years < 65: return 4
+  elif age_years < 99: return 5
+  else: return 0
 
 
 @task
@@ -30,48 +42,90 @@ def load_dataset() -> dict[str, pd.DataFrame]:
 
 
 @task
-def gen_group_features(data: dict[str, pd.DataFrame]) -> pd.DataFrame:
+def gen_ratio_features(data: dict[str, pd.DataFrame]) -> pd.DataFrame:
   df = data["train"]
-  res_df = df[[_id]].copy()
-  for group in [
+  res = df[[_id]].copy()
+
+  def ratio(target: str, num: str, denom: str):
+    if 0 in df[denom]:
+      ratio = df[num] / (1 + df[denom])
+    else:
+      ratio = df[num] / df[denom]
+    res[target] = ratio
+
+  ratio("manual__CREDIT_TO_ANNUITY_RATIO", "AMT_CREDIT", "AMT_ANNUITY")
+  ratio("manual__CREDIT_TO_GOODS_RATIO", "AMT_CREDIT", "AMT_GOODS_PRICE")
+  ratio("manual__CREDIT_TO_INCOME_RATIO", "AMT_CREDIT", "AMT_INCOME_TOTAL")
+
+  ratio("manual__ANNUITY_TO_INCOME_RATIO", "AMT_ANNUITY", "AMT_INCOME_TOTAL")
+  ratio("manual__ANNUITY_TO_GOODS_RATIO", "AMT_ANNUITY", "AMT_GOODS_PRICE")
+
+  ratio("manual__INCOME_TO_EMPLOYED_RATIO", "AMT_INCOME_TOTAL", "DAYS_EMPLOYED")
+  ratio("manual__INCOME_TO_BIRTH_RATIO", "AMT_INCOME_TOTAL", "DAYS_BIRTH")
+  ratio("manual__EMPLOYED_TO_BIRTH_RATIO", "DAYS_EMPLOYED", "DAYS_BIRTH")
+  ratio("manual__ID_TO_BIRTH_RATIO", "DAYS_ID_PUBLISH", "DAYS_BIRTH")
+  ratio("manual__CAR_TO_BIRTH_RATIO", "OWN_CAR_AGE", "DAYS_BIRTH")
+  ratio("manual__CAR_TO_EMPLOYED_RATIO", "OWN_CAR_AGE", "DAYS_EMPLOYED")
+  ratio("manual__PHONE_TO_BIRTH_RATIO", "DAYS_LAST_PHONE_CHANGE", "DAYS_BIRTH")
+  return utils.pandas_downcast(res)
+
+
+@task
+def gen_group_features(
+  data: dict[str, pd.DataFrame], ext_source_df: pd.DataFrame,
+  ratio_df: pd.DataFrame
+) -> pd.DataFrame:
+  df = pd.merge(data["train"], ext_source_df, on=_id)
+  df = pd.merge(df, ratio_df, on=_id)
+  df["AGE_GROUP"] = df.DAYS_BIRTH.apply(get_age_label)
+  res = df[[_id]].copy()
+
+  groups = [
     "NAME_CONTRACT_TYPE", "CODE_GENDER", "CNT_CHILDREN", "NAME_INCOME_TYPE",
     "NAME_FAMILY_STATUS", "OCCUPATION_TYPE", "CNT_FAM_MEMBERS",
-    "ORGANIZATION_TYPE"
-  ]:
-    new_feat_col = f"manual__INCOME_BY_{group}_MEDIAN"
-    new_rel_col = f"manual__INCOME_REL_TO_{group}"
-    inc_by_feat = df[[
-      "AMT_INCOME_TOTAL",
-      group,
-    ]].groupby(group).median()["AMT_INCOME_TOTAL"]
-    res_df[new_feat_col] = df[group].map(inc_by_feat)
-    res_df[new_rel_col] = df["AMT_INCOME_TOTAL"] / res_df[new_feat_col]
-  return res_df
+    "ORGANIZATION_TYPE", "NAME_EDUCATION_TYPE", "AGE_GROUP"
+  ]
+  features = [
+    "manual__EXT_SOURCES_min", "manual__EXT_SOURCES_max",
+    "manual__EXT_SOURCES_mean", "manual__EXT_SOURCES_median",
+    "manual__CREDIT_TO_ANNUITY_RATIO", "manual__ANNUITY_TO_GOODS_RATIO",
+    "AMT_INCOME_TOTAL", "AMT_ANNUITY", "AMT_CREDIT", "AMT_GOODS_PRICE"
+  ]
+
+  for group in groups:
+    for feat in features:
+      for func in ["median", "std"]:
+        new_func_col = f"manual__{feat}_{group}_{func}"
+        group_func = df[[feat, group]].groupby(group).agg(func)[feat]
+        res[new_func_col] = df[group].map(group_func)
+      new_rel_col = f"manual__{feat}_REL_TO_{group}_median"
+      res[new_rel_col] = df[feat] / res[f"manual__{feat}_{group}_median"]
+  return utils.pandas_downcast(res)
 
 
 @task
 def gen_docs_features(data: dict[str, pd.DataFrame]) -> pd.DataFrame:
   df = data["train"]
-  res_df = df[[_id]].copy()
+  res = df[[_id]].copy()
   cols = [f for f in df.columns if "FLAG_DOC" in f]
   for func in ["min", "max", "mean", "median", "std", "kurtosis"]:
-    res_df[f"manual__ALL_DOCS_{func}"] = df[cols].agg(func, axis=1)
+    res[f"manual__ALL_DOCS_{func}"] = df[cols].agg(func, axis=1)
 
-  return res_df
+  return utils.pandas_downcast(res)
 
 
 @task
 def gen_flag_features(data: dict[str, pd.DataFrame]) -> pd.DataFrame:
   df = data["train"]
-  res_df = df[[_id]].copy()
+  res = df[[_id]].copy()
   cols = [
     f for f in df.columns
     if ("FLAG_" in f) & ("FLAG_DOC" not in f) & ("_FLAG_" not in f)
   ]
   for func in ["min", "max", "mean", "median", "std", "kurtosis"]:
-    res_df[f"manual__OTHER_FLAGS_{func}"] = df[cols].agg(func, axis=1)
+    res[f"manual__OTHER_FLAGS_{func}"] = df[cols].agg(func, axis=1)
 
-  return res_df
+  return utils.pandas_downcast(res)
 
 
 @task
@@ -79,47 +133,74 @@ def gen_ext_sources_features(data: dict[str, pd.DataFrame]) -> pd.DataFrame:
   df = data["train"]
   res = df[[_id]].copy()
   cols = ["EXT_SOURCE_1", "EXT_SOURCE_2", "EXT_SOURCE_3"]
-  for func in ["min", "max", "mean", "median", "std", "kurtosis"]:
+  for func in ["min", "max", "mean", "median", "std"]:
     res[f"manual__EXT_SOURCES_{func}"] = df[cols].agg(func, axis=1)
+
   res["manual__EXT_SOURCES_mul"] = (
-    df["EXT_SOURCE_1"] * df["EXT_SOURCE_2"] * df["EXT_SOURCE_3"]
+    df.EXT_SOURCE_1.fillna(1) * df.EXT_SOURCE_2.fillna(1) *
+    df.EXT_SOURCE_3.fillna(1)
   )
 
-  return res
+  res["manual__EXT_SOURCES_weighted_sum"] = (
+    df.EXT_SOURCE_1.fillna(1) * 2 + df.EXT_SOURCE_2.fillna(1) * 1 +
+    df.EXT_SOURCE_3.fillna(1) * 3
+  )
+
+  res["manual__EXT_SOURCES_count"] = df[cols].count(axis=1)
+
+  return utils.pandas_downcast(res)
 
 
 @task
 def gen_bureau_balance_features(data: dict[str, pd.DataFrame]) -> pd.DataFrame:
   df = data["bureau_balance"]
   df = pd.get_dummies(df, dummy_na=True)
-  res = df.groupby("SK_ID_BUREAU").agg(["min", "max", "mean", "size"])
+  gb = df.groupby("SK_ID_BUREAU")
+  res = gb.agg(["min", "max", "mean"])
   res.columns = task_lib.flatten_col_names(res, prefix="manual__BUREAU_BALANCE")
-  return res
+  res["manual__BUREAU_BALANCE_size"] = gb.size()
+  return utils.pandas_downcast(res)
 
 
 @task
 def gen_bureau_features(
   data: dict[str, pd.DataFrame], bb_df: pd.DataFrame
 ) -> pd.DataFrame:
-  df = data["bureau"]
+  df = data["bureau"].copy()
+  df["manual__CREDIT_DURATION"] = df["DAYS_CREDIT_ENDDATE"] - df["DAYS_CREDIT"]
+  df["manual__ENDDATE_DIF"] = (
+    df["DAYS_CREDIT_ENDDATE"] - df["DAYS_ENDDATE_FACT"]
+  )
+  # Credit to debt ratio and difference
+  df["manual__DEBT_PERCENTAGE"] = (
+    df["AMT_CREDIT_SUM"] / df["AMT_CREDIT_SUM_DEBT"]
+  )
+  df["manual__DEBT_CREDIT_DIFF"] = (
+    df["AMT_CREDIT_SUM"] - df["AMT_CREDIT_SUM_DEBT"]
+  )
+  df["manual__CREDIT_TO_ANNUITY_RATIO"] = (
+    df["AMT_CREDIT_SUM"] / df["AMT_ANNUITY"]
+  )
 
-  df = df.join(bb_df, on="SK_ID_BUREAU")
-  df = df.drop(["SK_ID_BUREAU"], axis=1)
   dummies = pd.get_dummies(df, dummy_na=True)
+  dummies = dummies.join(bb_df, on="SK_ID_BUREAU")
+  dummies = dummies.drop(["SK_ID_BUREAU"], axis=1)
 
-  res = dummies.groupby(_id).agg(["min", "max", "mean", "size"])
+  gb = dummies.groupby(_id)
+  res = gb.agg(["min", "max", "mean"])
   res.columns = task_lib.flatten_col_names(res, prefix="manual__BUREAU")
+  res["manual__BUREAU_size"] = gb.size()
 
   for ca in df["CREDIT_ACTIVE"].unique():
     # Aggregations for different credit active statuses.
-    agg = df[df["CREDIT_ACTIVE"] == ca].groupby(_id).agg([
-      "min", "max", "mean", "size"
-    ])
+    gb = df[df["CREDIT_ACTIVE"] == ca].groupby(_id)
+    agg = gb.agg(["min", "max", "mean"])
     agg.columns = task_lib.flatten_col_names(
-      agg, prefix=f"manual_BUREAU_CREDIT_ACTIVE_{ca}"
+      agg, prefix=f"manual__BUREAU_CREDIT_ACTIVE_{ca}"
     )
+    agg[f"manual__BUREAU_CREDIT_ACTIVE_{ca}_size"] = gb.size()
     res = res.join(agg, on=_id)
-  return res
+  return utils.pandas_downcast(res)
 
 
 @task
@@ -141,46 +222,46 @@ def gen_previous_application_features(
   df = df.drop("SK_ID_PREV", axis=1)
 
   # Calculate aggregations of the original numeric columns
-  agg = df.select_dtypes("number").groupby(_id).agg([
-    "min", "max", "var", "sum"
-  ])
+  agg = df.select_dtypes("number").groupby(_id).agg(["min", "max", "var"])
   agg.columns = task_lib.flatten_col_names(agg, prefix="manual__PREVAPP")
   res = res.join(agg, on=_id)
-  return res
 
-  #   for status in df["NAME_CONTRACT_STATUS"].unique():
-  #     # Aggregations for different credit active statuses.
-  #     agg = df[df["NAME_CONTRACT_STATUS"] == status].groupby(_id
-  #                                                           ).agg(aggregations)
-  #     agg.columns = task_lib.flatten_col_names(
-  #       agg, prefix="manual__PREVAPP_NAME_CONTRACT"
-  #     )
-  #     res = res.join(agg, on=_id)
+  for status in df["NAME_CONTRACT_STATUS"].unique():
+    # Aggregations for different credit active statuses.
+    agg = df[df["NAME_CONTRACT_STATUS"] == status].groupby(_id).agg([
+      "min", "max", "mean", "var"
+    ])
+    agg.columns = task_lib.flatten_col_names(
+      agg, prefix=f"manual__PREVAPP_NAME_CONTRACT_{status}"
+    )
+    res = res.join(agg, on=_id)
 
-  return res
+  return utils.pandas_downcast(res)
 
 
 @task
 def gen_pos_cash_features(data: dict[str, pd.DataFrame]) -> pd.DataFrame:
   df = data["pos_cash_balance"]
   res = pd.get_dummies(df)
-  aggregations = ["min", "max", "mean", "size"]
-  res = res.groupby(_id).agg(aggregations)
+  aggregations = ["min", "max", "mean", "var"]
+  gb = res.groupby(_id)
+  res = gb.agg(aggregations)
   res.columns = task_lib.flatten_col_names(res, prefix="manual__POS")
   # Count pos cash accounts
-  res["manual__POS_COUNT"] = res.groupby(_id).size()
-  return res
+  res["manual__POS_COUNT"] = gb.size()
+  return utils.pandas_downcast(res)
 
 
 @task
 def gen_credit_card_features(data: dict[str, pd.DataFrame]) -> pd.DataFrame:
   df = data["credit_card_balance"]
   df = df.drop("SK_ID_PREV", axis=1)
-  res = df.groupby(_id).agg(["min", "max", "mean", "sum", "var"])
+  gb = df.groupby(_id)
+  res = gb.agg(["min", "max", "mean", "var"])
   res.columns = task_lib.flatten_col_names(res, prefix="manual__CC")
   # Count credit card lines
-  res["manual__CC_COUNT"] = df.groupby(_id).size()
-  return res
+  res["manual__CC_COUNT"] = gb.size()
+  return utils.pandas_downcast(res)
 
 
 @task
@@ -206,7 +287,7 @@ def gen_installments_payments_features(
 
   # Count installments accounts
   res["manual__INSTAL_COUNT"] = df.groupby(_id).size()
-  return res
+  return utils.pandas_downcast(res)
 
 
 @task
@@ -233,8 +314,9 @@ def main(argv):
     data = load_dataset()
     data = set_nans(data)
     id_df = get_id(data)
-    group_feats = gen_group_features(data)
     ext_sources_feats = gen_ext_sources_features(data)
+    ratio_feats = gen_ratio_features(data)
+    group_feats = gen_group_features(data, ext_sources_feats, ratio_feats)
     docs_features = gen_docs_features(data)
     flags_features = gen_flag_features(data)
     bureau_balance_features = gen_bureau_balance_features(data)
@@ -246,8 +328,9 @@ def main(argv):
 
     merge_df([
       id_df,
-      group_feats,
       ext_sources_feats,
+      ratio_feats,
+      group_feats,
       docs_features,
       flags_features,
       bureau_features,

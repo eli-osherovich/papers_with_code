@@ -42,7 +42,7 @@ flags.DEFINE_bool("save", True, "Save results")
 flags.DEFINE_float("corr_thresh", 0.98, "Correlation threshold", lower_bound=0)
 flags.DEFINE_float("imp_thresh", 0.005, "Importance threshold", lower_bound=0)
 flags.DEFINE_float(
-  "imp_thresh_scale", 10, "Importance threshold", lower_bound=1
+  "imp_thresh_autofeat_ts", 0.05, "Importance threshold", lower_bound=0
 )
 flags.DEFINE_float("null_thresh", 0.6, "NULLity threshold", lower_bound=0)
 flags.DEFINE_float("lr", 0.025, "Learning rate", lower_bound=1e-10)
@@ -62,6 +62,14 @@ flags.DEFINE_integer("trials", 150, "Number of tuning trials", lower_bound=1)
 
 _logger = logging.get_logger()
 
+_id = "SK_ID_CURR"
+_target = "TARGET"
+
+
+def task(func):
+  return func
+
+
 remove_null_columns = task(task_lib.remove_null_columns)
 remove_high_corr = task(task_lib.remove_high_corr)
 load_features_data = task(task_lib.load_features_data)
@@ -74,7 +82,7 @@ set_nans = task(task_lib.set_nans)
 def load_targets() -> pd.DataFrame:
   ds = Dataset()
   df = ds.as_dataframe("train")
-  return df[["SK_ID_CURR", "TARGET"]]
+  return df[[_id, _target]]
 
 
 @task
@@ -84,17 +92,37 @@ def merge_features(
   logger=None
 ) -> pd.DataFrame:
 
-  features_data = features_data.drop("TARGET", axis=1, errors="ignore")
-  res = cur_df.merge(features_data, how="left", on="SK_ID_CURR")
+  features_data = features_data.drop(_target, axis=1, errors="ignore")
+
+  # In case of column overlap, use those from cur_df
+  cols_to_use = features_data.columns.difference(cur_df.columns).to_list()
+
+  # _id can be either a column or idex (e.g., for aggregated features)
+  if _id in features_data:
+    cols_to_use.append(_id)
+  res = cur_df.merge(
+    features_data[cols_to_use],
+    how="left",
+    on=_id,
+    suffixes=("", ""),  # make sure no columns are duplicated.
+    validate="one_to_one"
+  )
 
   if logger:
-    logger.info(f"Merged dataframe shape: {res.shape}")
+    logger.info(
+      f"Merged dataframes: {cur_df.shape} + {features_data.shape} -> {res.shape}"
+    )
   return res
 
 
 @task
+def save_feather(df: pd.DataFrame, path: str) -> None:
+  df.reset_index().to_feather(path)
+
+
+@task
 def train(model, train_df, test_df, config, *, logger=None):
-  roles = {"target": "TARGET"}
+  roles = {"target": _target}
   oof_pred = model.fit_predict(train_df, roles=roles, verbose=2)
   test_pred = model.predict(test_df)
 
@@ -103,7 +131,6 @@ def train(model, train_df, test_df, config, *, logger=None):
       f"OOF score: "
       f"{roc_auc_score(train_df[config['target']].values, oof_pred.data[:, 0])}"
     )
-
     logger.info(
       f"TEST score: "
       f"{roc_auc_score(test_df[config['target']].values, test_pred.data[:, 0])}"
@@ -124,7 +151,7 @@ def init(config: dict[str, Any]) -> None:
 @task
 def load_config(*, logger=None) -> dict[str, Any]:
   config = {
-    "target": "TARGET",
+    "target": _target,
     "n_threads": psutil.cpu_count(logical=True),
     "test_size": 0.1,
     "random_state": 42,
@@ -199,16 +226,24 @@ def first_level_pipeline(config) -> list[MLPipeline]:
   )
 
   goss_model = BoostLGBM(
-    name="GOSS",
+    name="KGOSS",
     default_params={
       "boosting": "goss",
+      "n_estimators": 10000,
       "bagging_freq": 0,  # GOSS does not support bagging.
-      "early_stopping_rounds": FLAGS.patience,
-      "learning_rate": FLAGS.lr,
-      "num_leaves": FLAGS.num_leaves,
       "num_threads": config["n_threads"],
-      "num_trees": FLAGS.max_trees,
-      "random_state": 3,
+      "random_state": 737851,
+      "learning_rate": 0.005134,
+      "num_leaves": 54,
+      "max_depth": 10,
+      "subsample_for_bin": 240000,
+      "reg_alpha": 0.436193,
+      "reg_lambda": 0.479169,
+      "colsample_bytree": 0.508716,
+      "min_split_gain": 0.024766,
+      "subsample": 1,
+      "is_unbalance": False,
+      "early_stopping_rounds": 100,
     }
   )
 
@@ -224,6 +259,8 @@ def first_level_pipeline(config) -> list[MLPipeline]:
   gbt_pipeline = MLPipeline(
     [
       kaggle_model,
+      goss_model,
+      dart_model,
       gbt_model,
       # (
       #   gbt_model,
@@ -234,9 +271,7 @@ def first_level_pipeline(config) -> list[MLPipeline]:
       #   )
       # ),
       cb_model,
-      dart_model,
       rf_model,
-      goss_model,
     ],
     features_pipeline=LGBAdvancedPipeline(),
   )
@@ -266,7 +301,6 @@ def split_data(df: pd.DataFrame,
                config: dict[str, Any],
                *,
                logger=None) -> tuple[pd.DataFrame, pd.DataFrame]:
-  df.reset_index().to_feather("/tmp/full_df.feather")
   train_df, test_df = train_test_split(
     df,
     test_size=config["test_size"],
@@ -286,21 +320,22 @@ def main(argv):
   with Flow("main") as flow:
     config = load_config()
     init(config)
-    all_feats = zip(
-      [
-        "train", "manual", "train", "train", "credit_card_balance",
-        "installments_payments", "pos_cache_balance"
-      ],
-      [
-        None, None, "autofeat_num", "autofeat_bool", "autofeat_ts",
-        "autofeat_ts", "autofeat_ts"
-      ],
-    )
+    all_feats = [
+      ("train", None),
+      ("manual", None),
+      ("manual_kaggle", None),
+      ("train", "autofeat_num"),
+      ("train", "autofeat_bool"),
+      ("credit_card_balance", "autofeat_ts"),
+      ("installments_payments", "autofeat_ts"),
+      ("pos_cache_balance", "autofeat_ts"),
+    ]
     train_df = load_targets()
     for data_type, features_type in all_feats:
-      imp_thresh = FLAGS.imp_thresh
       if features_type == "autofeat_ts":
-        imp_thresh *= FLAGS.imp_thresh_scale
+        imp_thresh = FLAGS.imp_thresh_autofeat_ts
+      else:
+        imp_thresh = FLAGS.imp_thresh
       imp_features = get_important_features(
         data_type, features_type, imp_thresh, logger=_logger
       )
@@ -314,8 +349,11 @@ def main(argv):
         features_df, FLAGS.corr_thresh, logger=_logger
       )
       train_df = merge_features(train_df, features_df, logger=_logger)
+    save_feather(train_df, "/tmp/df_before_nans.feather")
     train_df = set_nans(train_df)
+    save_feather(train_df, "/tmp/df_after_nans.feather")
     train_df = remove_high_corr(train_df, FLAGS.corr_thresh, logger=_logger)
+    save_feather(train_df, "/tmp/df_after_corr.feather")
     train_df, test_df = split_data(train_df, config)
     level1 = first_level_pipeline(config)
     # level2 = second_level_pipeline(config)
