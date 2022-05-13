@@ -22,10 +22,72 @@ flags.DEFINE_enum(
 
 
 def get_ts_params():
+  # Features selected from a previous (good) model
+  # Orered by total importance (descending)
+  ts_features = [
+    "cwt_coefficients",
+    "agg_linear_trend",
+    "change_quantiles",
+    "partial_autocorrelation",
+    "quantile",
+    "energy_ratio_by_chunks",
+    "autocorrelation",
+    "index_mass_quantile",
+    "linear_trend",
+    "ar_coefficient",
+    "time_reversal_asymmetry_statistic",
+    "c3",
+    "fourier_entropy",
+    "percentage_of_reoccurring_datapoints_to_all_datapoints",
+    "ratio_value_number_to_time_series_length",
+    "lempel_ziv_complexity",
+    "sum_of_reoccurring_data_points",
+    "sum_of_reoccurring_values",
+    "ratio_beyond_r_sigma",
+    "first_location_of_maximum",
+    "binned_entropy",
+    "sample_entropy",
+    "spkt_welch_density",
+    "first_location_of_minimum",
+    "median",
+    "percentage_of_reoccurring_values_to_all_values",
+    "matrix_profile",
+    "approximate_entropy",
+    "abs_energy",
+    "mean_second_derivative_central",
+    "agg_autocorrelation",
+    "benford_correlation",
+    "mean",
+    "augmented_dickey_fuller",
+    "variation_coefficient",
+    "last_location_of_minimum",
+    "cid_ce",
+    "inter",
+    "root_mean_square",
+    "minimum",
+    "last_location_of_maximum",
+    "skewness",
+    "kurtosis",
+    "maximum",
+    "max_langevin_fixed_point",
+    "count_above",
+    "mean_abs_change",
+    "standard_deviation",
+    "mean_change",
+    "count_below",
+    "has_duplicate_max",
+    "permutation_entropy",
+    "absolute_sum_of_changes",
+    "longest_strike_above_mean",
+    "longest_strike_below_mean",
+    "sum_values",
+    "variance",
+    "number_peaks",
+  ]
   params = tsfresh.feature_extraction.ComprehensiveFCParameters()
-  del params["fft_aggregated"]
-  del params["fft_coefficient"]
-  del params["symmetry_looking"]
+  for key in params:
+    if key not in ts_features:
+      del params[key]
   return params
 
 

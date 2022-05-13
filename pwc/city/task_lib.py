@@ -1,9 +1,16 @@
+from datetime import datetime
 import pathlib
-from typing import Union
+from typing import Any, Union
 
 import joblib
+from lightautoml.automl.base import AutoML
+from lightautoml.automl.blend import WeightedBlender
+from lightautoml.reader.base import PandasToPandasReader
+import lightautoml.tasks
 import numpy as np
 import pandas as pd
+from sklearn.metrics import roc_auc_score
+from sklearn.model_selection import train_test_split
 
 DataType = Union[dict[str, pd.DataFrame], pd.DataFrame]
 PathType = Union[str, pathlib.Path]
@@ -200,3 +207,49 @@ def flatten_col_names(df: pd.DataFrame, *, prefix: str = "") -> list[str]:
     else:
       new_cols.append("_".join(idx))
   return new_cols
+
+
+def split_data(df: pd.DataFrame,
+               config: dict[str, Any],
+               *,
+               logger=None) -> tuple[pd.DataFrame, pd.DataFrame]:
+  train_df, test_df = train_test_split(
+    df,
+    test_size=config["test_size"],
+    random_state=config["random_state"],
+    stratify=df[config["target"]]
+  )
+  if logger:
+    logger.info(
+      f"Splitted data train/test: {1-config['test_size']}/{config['test_size']}"
+    )
+  return train_df, test_df
+
+
+def get_automl(pipelines: list[list], config: dict[str, Any]):
+  task = lightautoml.tasks.Task("binary")
+  reader = PandasToPandasReader(
+    task, cv=config["cv_folds"], random_state=config["random_state"]
+  )
+
+  return AutoML(reader, pipelines, blender=WeightedBlender())
+
+
+def train(model, train_df, test_df, roles, config, *, logger=None):
+  oof_pred = model.fit_predict(train_df, roles=roles, verbose=2)
+  test_pred = model.predict(test_df)
+
+  timestamp = datetime.now().isoformat(timespec="minutes")
+  model_dir = pathlib.Path(__file__).parent / "models"
+  joblib.dump(model, model_dir / f"fraud_{timestamp}.pkl")
+
+  if logger:
+    logger.info(
+      f"OOF score: "
+      f"{roc_auc_score(train_df[config['target']].values, oof_pred.data[:, 0])}"
+    )
+
+    logger.info(
+      f"TEST score: "
+      f"{roc_auc_score(test_df[config['target']].values, test_pred.data[:, 0])}"
+    )

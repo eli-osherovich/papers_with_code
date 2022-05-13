@@ -1,7 +1,10 @@
+import datetime
+from itertools import combinations
 import random
 from typing import Any
 
 from absl import flags
+import joblib
 import lightautoml
 from lightautoml.automl.base import AutoML
 from lightautoml.automl.blend import WeightedBlender
@@ -24,9 +27,9 @@ from prefect import Flow
 from prefect import task
 from prefect.engine.results import LocalResult
 import psutil
+from sklearn.feature_selection import mutual_info_classif
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
-import tensorflow as tf
 import torch
 
 from pwc.datasets import HomeCreditDefaultRisk as DataSet
@@ -47,6 +50,78 @@ def load_data() -> tuple[dict[str, pd.DataFrame], dict]:
   data["credit_card_balance"] = ds.as_dataframe("credit_card_balance")
 
   roles = {"target": "TARGET", "drop": "SK_ID_CURR"}
+  return data, roles
+
+
+@task
+def feature_engineering_auto(
+  data: dict[str, pd.DataFrame]
+) -> tuple[dict[str, pd.DataFrame], dict]:
+  logger = prefect.context.get("logger")
+
+  def set_nans(df):
+    # Remove the rows without gender
+    if "CODE_GENDER" in df.columns:
+      df = df[df['CODE_GENDER'] != "XNA"]
+
+    # Replace NaN substitutes with proper NaNs
+    df.replace(["XNA", 365243], np.nan, inplace=True)
+    return df
+
+  def sample(df, target, nsamples=10_000):
+    # gb = df.groupby(target)
+    # return df.groupby(target).sample(nsamples, replace=True)
+    train, _ = train_test_split(
+      df, train_size=nsamples, stratify=df[target], random_state=13
+    )
+    return train
+
+  def gen_features(df, const_thresh=0.99):
+    n = len(df)
+    res = pd.DataFrame()
+
+    valid_cols = []
+    for col in df.columns:
+      const_ratio = df[col].value_counts().max() / n
+      if const_ratio < const_thresh:
+        valid_cols.append(col)
+      else:
+        print("Dropping ", col, const_ratio, const_thresh)
+    for c0, c1 in combinations(valid_cols, 2):
+      res[f"autofeat__{c0}__div__{c1}"] = (df[c0] / (0.12105715271343 + df[c1]))
+    return res
+
+  df = data["train"]
+  df = set_nans(df)
+
+  x = sample(df, "TARGET", 10000)
+  y = x["TARGET"]
+  x = x.drop(columns=["TARGET"])
+  num_cols = [c for c in x.columns if x.dtypes[c] != "object"]
+  x = x[num_cols]
+  x = x.fillna(x.median())
+
+  x = gen_features(x)
+
+  mi = mutual_info_classif(x, y) / mutual_info_classif(
+    y.to_numpy().reshape(-1, 1), y, random_state=13
+  )
+  mi = pd.Series(data=mi, index=x.columns).sort_values(ascending=False)
+  good_cols = mi[mi > 0.01].index
+  x = x[good_cols]
+  corr_mat = x.corr().abs()
+  corr_cols = corr_mat.columns[(np.triu(corr_mat, k=1) > 0.98).any(axis=0)]
+  logger.info(f"Dropping auto features due to high correlation: {corr_cols}")
+  x = x.drop(corr_cols, axis=1)
+  logger.info(f"Final auto featues: {x.columns}")
+  for c in x.columns:
+    s = c.split("__")
+    c0, c1 = s[1], s[3]
+    df[f"autofeat__{c0}__div__{c1}"] = df[c0] / (0.12105715271343 + df[c1])
+
+  roles = {"target": "TARGET", "drop": "SK_ID_CURR"}
+
+  data["train"] = df
   return data, roles
 
 
@@ -140,7 +215,8 @@ def feature_engineering(
     ins = data["installments_payments"]
 
     # Percentage and difference paid in each installment (amount paid and installment value)
-    ins["PAYMENT_PERC"] = ins["AMT_PAYMENT"] / ins["AMT_INSTALMENT"]
+    ins["PAYMENT_PERC"
+       ] = ins["AMT_PAYMENT"] / (0.13124131232 + ins["AMT_INSTALMENT"])
     ins["PAYMENT_DIFF"] = ins["AMT_INSTALMENT"] - ins["AMT_PAYMENT"]
 
     # Days past due and days before due (no negative values)
@@ -266,7 +342,7 @@ def feature_engineering(
     gen_credit_card_features(), on="SK_ID_CURR", rsuffix="CREDIT_CARD_"
   )
   # Roles
-  roles = {"target": "TARGET"}
+  roles = {"target": "TARGET", "drop": "SK_ID_CURR"}
 
   return df, roles
 
@@ -276,7 +352,6 @@ def init(config: dict[str, Any]) -> None:
   logger = prefect.context.get("logger")
 
   np.random.seed(config["random_state"])
-  tf.random.set_seed(config["random_state"])
   torch.manual_seed(config["random_state"])
   random.seed(config["random_state"])
   torch.set_num_threads(config["n_threads"])
@@ -320,11 +395,11 @@ def split_data(df: pd.DataFrame,
 
 @task
 def first_level_pipeline(config) -> list[MLPipeline]:
-  gbdt_model = BoostLGBM(
+  gbt_model = BoostLGBM(
     default_params={
       "boosting": "gbdt",
       "early_stopping_rounds": FLAGS.patience,
-      "learning_rate": 0.025,
+      "learning_rate": FLAGS.lr,
       "num_leaves": FLAGS.num_leaves,
       "num_threads": config["n_threads"],
       "num_trees": FLAGS.max_trees,
@@ -336,7 +411,7 @@ def first_level_pipeline(config) -> list[MLPipeline]:
     default_params={
       "boosting": "dart",
       # "early_stopping_rounds": FLAGS.patience, Not supported in DART
-      "learning_rate": 0.025,
+      "learning_rate": FLAGS.lr,
       "num_leaves": FLAGS.num_leaves,
       "num_threads": config["n_threads"],
       "num_trees": FLAGS.max_trees,
@@ -348,7 +423,7 @@ def first_level_pipeline(config) -> list[MLPipeline]:
     default_params={
       "boosting": "rf",
       "early_stopping_rounds": FLAGS.patience,
-      "learning_rate": 0.025,
+      "learning_rate": FLAGS.lr,
       "num_leaves": FLAGS.num_leaves,
       "num_threads": config["n_threads"],
       "num_trees": FLAGS.max_trees,
@@ -361,7 +436,7 @@ def first_level_pipeline(config) -> list[MLPipeline]:
       "boosting": "goss",
       "bagging_freq": 0,  # GOSS does not support bagging.
       "early_stopping_rounds": FLAGS.patience,
-      "learning_rate": 0.025,
+      "learning_rate": FLAGS.lr,
       "num_leaves": FLAGS.num_leaves,
       "num_threads": config["n_threads"],
       "num_trees": FLAGS.max_trees,
@@ -371,7 +446,7 @@ def first_level_pipeline(config) -> list[MLPipeline]:
 
   cb_model = BoostCB(
     default_params={
-      "learning_rate": 0.025,
+      "learning_rate": FLAGS.lr,
       "num_trees": FLAGS.max_trees,
       "random_state": 4,
       "thread_count": config["n_threads"],
@@ -381,7 +456,7 @@ def first_level_pipeline(config) -> list[MLPipeline]:
   gbt_pipeline = MLPipeline(
     [
       cb_model,
-      gbdt_model,
+      gbt_model,
       dart_model,
       rf_model,
       goss_model,
@@ -445,7 +520,7 @@ def first_level_pipeline(config) -> list[MLPipeline]:
 #     default_params={
 #       "boosting": "gbdt",
 #       "early_stopping_rounds": FLAGS.patience,
-#       "learning_rate": 0.025,
+#       "learning_rate": FLAGS.lr,
 #       "num_leaves": FLAGS.num_leaves,
 #       "num_threads": config["n_threads"],
 #       "num_trees": FLAGS.max_trees,
@@ -457,7 +532,7 @@ def first_level_pipeline(config) -> list[MLPipeline]:
 #     default_params={
 #       "boosting": "dart",
 #       # "early_stopping_rounds": FLAGS.patience, Not supported in DART
-#       "learning_rate": 0.025,
+#       "learning_rate": FLAGS.lr,
 #       "num_leaves": FLAGS.num_leaves,
 #       "num_threads": config["n_threads"],
 #       "num_trees":
@@ -471,7 +546,7 @@ def first_level_pipeline(config) -> list[MLPipeline]:
 #     default_params={
 #       "boosting": "rf",
 #       "early_stopping_rounds": FLAGS.patience,
-#       "learning_rate": 0.025,
+#       "learning_rate": FLAGS.lr,
 #       "num_leaves": FLAGS.num_leaves,
 #       "num_threads": config["n_threads"],
 #       "num_trees": FLAGS.max_trees,
@@ -484,7 +559,7 @@ def first_level_pipeline(config) -> list[MLPipeline]:
 #       "boosting": "goss",
 #       "bagging_freq": 0,  # GOSS does not support bagging.
 #       "early_stopping_rounds": FLAGS.patience,
-#       "learning_rate": 0.025,
+#       "learning_rate": FLAGS.lr,
 #       "num_leaves": FLAGS.num_leaves,
 #       "num_threads": config["n_threads"],
 #       "num_trees": FLAGS.max_trees,
@@ -494,7 +569,7 @@ def first_level_pipeline(config) -> list[MLPipeline]:
 
 #   cb_model = BoostCB(
 #     default_params={
-#       "learning_rate": 0.025,
+#       "learning_rate": FLAGS.lr,
 #       "num_trees": FLAGS.max_trees,
 #       "random_state": 9,
 #       "thread_count": config["n_threads"],
@@ -548,14 +623,18 @@ def train(model, train_df, test_df, roles, config):
     f"TEST score: "
     f"{roc_auc_score(test_df[config['target']].values, test_pred.data[:, 0])}"
   )
+  timestamp = datetime.datetime.now().isoformat(timespec='minutes')
+  model_dir = pathlib.Path(__file__).parent / "models"
+  joblib.dump(model, model_dir / f"{timestamp}.pkl")
 
 
 result = LocalResult(dir="/tmp/flow-results")
 with Flow("AutoML", result=result) as flow_automl:
   config = load_config()
   init(config)
-  df, roles = load_data()
-  df, roles = feature_engineering(df)
+  data, roles = load_data()
+  data, roles = feature_engineering_auto(data)
+  df, roles = feature_engineering(data)
   train_df, test_df = split_data(df, config)
   level1 = first_level_pipeline(config)
   # level2 = second_level_pipeline(config)
